@@ -1,0 +1,10 @@
+mod finite_field;
+
+use finite_field::FiniteElement;   
+
+fn main() {
+    let a = FiniteElement::new(7, 13);
+    let b = FiniteElement::new(6, 13);
+    println!("{}", a == b);
+    println!("{}", a != b);
+}

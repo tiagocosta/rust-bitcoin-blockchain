@@ -1,4 +1,4 @@
-use std::ops::{Add, Sub};
+use std::ops::{Add, Sub, Mul};
 
 #[derive(Debug)]
 pub struct FiniteElement {
@@ -22,10 +22,8 @@ impl Add for FiniteElement {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
-        Self {
-            num: (self.num + other.num) % self.prime,
-            prime: self.prime,
-        }
+        let num = (self.num + other.num) % self.prime;
+        Self::new(num, self.prime)
     }
 }
 
@@ -33,13 +31,19 @@ impl Sub for FiniteElement {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        // ((a % b) + b) % b // workaround for modulus operation
+        // ((a % b) + b) % b // workaround for modulus operation in rust
         let num = self.num - other.num;
         let res = ((num % self.prime) + self.prime) % self.prime;
-        Self {
-            num: res,
-            prime: self.prime,
-        }
+        Self::new(res, self.prime)
+    }
+}
+
+impl Mul for FiniteElement {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self {
+        let num = (self.num * rhs.num) % self.prime;
+        Self::new(num, self.prime)
     }
 }
 
@@ -79,5 +83,13 @@ mod tests {
         let d = FiniteElement::new(30, 31);
         let res_sub_c_d = FiniteElement::new(16, 31);
         assert_eq!(c - d, res_sub_c_d);
+    }
+
+    #[test]
+    fn test_mul() {
+        let a = FiniteElement::new(24, 31);
+        let b = FiniteElement::new(19, 31);
+        let res_mul_a_b = FiniteElement::new(22, 31);
+        assert_eq!(a * b, res_mul_a_b);
     }
 }

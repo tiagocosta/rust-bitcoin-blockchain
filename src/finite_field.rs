@@ -10,6 +10,11 @@ impl FiniteElement {
     pub fn new(num: i32, prime: i32) -> Self {
         FiniteElement { num, prime }
     }
+
+    pub fn pow(&self, exponent: u32) -> Self {
+        let num = self.num.pow(exponent) % self.prime;
+        Self::new(num, self.prime)
+    }
 }
 
 impl PartialEq for FiniteElement {
@@ -91,5 +96,16 @@ mod tests {
         let b = FiniteElement::new(19, 31);
         let res_mul_a_b = FiniteElement::new(22, 31);
         assert_eq!(a * b, res_mul_a_b);
+    }
+
+    #[test]
+    fn test_pow() {
+        let a = FiniteElement::new(17, 31);
+        let a_pow_3 = FiniteElement::new(15, 31);
+        assert_eq!(a.pow(3), a_pow_3);
+        let b = FiniteElement::new(5, 31);
+        let c = FiniteElement::new(18, 31);
+        let res_b_pow_5_mul_c = FiniteElement::new(16, 31);
+        assert_eq!(b.pow(5) * c, res_b_pow_5_mul_c);
     }
 }

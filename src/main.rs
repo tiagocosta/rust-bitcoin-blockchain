@@ -12,4 +12,13 @@ fn main() {
     let d = FiniteElement::new(12, 13);
     let e = FiniteElement::new(6, 13);
     println!("{}", c + d == e);
+
+    let f = FiniteElement::new(3, 13);
+    let g = FiniteElement::new(12, 13);
+    let h = FiniteElement::new(10, 13);
+    println!("{}", f * g == h);
+
+    let i = FiniteElement::new(3, 13);
+    let j = FiniteElement::new(1, 13);
+    println!("{}", i.pow(3) == j);
 }

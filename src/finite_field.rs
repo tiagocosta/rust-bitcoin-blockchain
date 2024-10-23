@@ -10,7 +10,7 @@ pub struct FiniteElement {
 impl FiniteElement {
     pub fn new(num: BigUint, prime: BigUint) -> Self {
         if num >= prime {
-            panic!("Num {} not in field range 0 to {}", num, prime - BigUint::from(1u32));
+            panic!("num {} not in field range 0 to {}", num, prime - BigUint::from(1u32));
         }
         FiniteElement { num, prime }
     }
@@ -36,6 +36,9 @@ impl Add for FiniteElement {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
+        if same_field(&self, &other) {
+            panic!("can't add numbers in different fields");
+        }
         let num = (&self.num + &other.num) % &self.prime;
         Self::new(num, self.prime)
     }
@@ -45,6 +48,9 @@ impl Sub for FiniteElement {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
+        if same_field(&self, &other) {
+            panic!("can't subtract numbers in different fields");
+        }
         // ((a % b) + b) % b // workaround for modulus operation of a negative number in rust
         let num = &self.num.to_bigint().unwrap() - &other.num.to_bigint().unwrap();
         let prime = &self.prime.to_bigint().unwrap();
@@ -57,6 +63,9 @@ impl Mul for FiniteElement {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
+        if same_field(&self, &rhs) {
+            panic!("can't multiply numbers in different fields");
+        }
         let num = (&self.num * &rhs.num) % &self.prime;
         Self::new(num, self.prime)
     }
@@ -67,10 +76,17 @@ impl Div for FiniteElement {
 
     fn div(self, rhs: Self) -> Self::Output {
         if rhs.num == BigUint::from(0u32) {
-            panic!("Cannot divide by zero!");
+            panic!("can't divide by zero!");
+        }
+        if same_field(&self, &rhs) {
+            panic!("can't divide numbers in different fields");
         }
         self * rhs.pow(&BigInt::from(-1))
     }
+}
+
+fn same_field(elem_1: &FiniteElement, elem_2: &FiniteElement) -> bool {
+    elem_1.prime != elem_2.prime 
 }
 
 #[cfg(test)]

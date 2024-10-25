@@ -94,6 +94,23 @@ mod tests {
     use super::*;
 
     #[test]
+    #[should_panic]
+    fn test_new_invalid_finite_element() {
+        let num = BigUint::from(31u32);
+        let prime = BigUint::from(29u32);
+        FiniteElement::new(num, prime);
+    }
+
+    #[test]
+    fn test_new_valid_finite_element() {
+        let num = BigUint::from(29u32);
+        let prime = BigUint::from(31u32);
+        let field_element = FiniteElement::new(num, prime);
+        assert_eq!(field_element.num, BigUint::from(29u32));
+        assert_eq!(field_element.prime, BigUint::from(31u32));
+    }
+
+    #[test]
     fn test_eq() {
 
         let a = FiniteElement::new(BigUint::from(2u32), BigUint::from(31u32));

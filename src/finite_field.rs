@@ -1,10 +1,10 @@
 use std::ops::{Add, Sub, Mul, Div};
 use num_bigint::{BigInt, BigUint, Sign, ToBigInt};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FiniteElement {
-    num: BigUint,
-    prime: BigUint,
+    pub num: BigUint,
+    pub prime: BigUint,
 }
 
 impl FiniteElement {
@@ -44,6 +44,18 @@ impl Add for FiniteElement {
     }
 }
 
+impl<'a, 'b> Add<&'b FiniteElement> for &'a FiniteElement {
+    type Output = FiniteElement;
+
+    fn add(self, other: &'b FiniteElement) -> FiniteElement {
+        if same_field(self, other) {
+            panic!("can't add numbers in different fields");
+        }
+        let num = (&self.num + &other.num) % &self.prime;
+        FiniteElement::new(num, self.prime.clone())
+    }
+}
+
 impl Sub for FiniteElement {
     type Output = Self;
 
@@ -59,6 +71,21 @@ impl Sub for FiniteElement {
     }
 }
 
+impl<'a, 'b> Sub<&'b FiniteElement> for &'a FiniteElement {
+    type Output = FiniteElement;
+
+    fn sub(self, other: &'b FiniteElement) -> FiniteElement {
+        if same_field(self, other) {
+            panic!("can't subtract numbers in different fields");
+        }
+        // ((a % b) + b) % b // workaround for modulus operation of a negative number in rust
+        let num = &self.num.to_bigint().unwrap() - &other.num.to_bigint().unwrap();
+        let prime = &self.prime.to_bigint().unwrap();
+        let res = ((num % prime) + prime) % prime;
+        FiniteElement::new(res.to_biguint().unwrap(), self.prime.clone())
+    }
+}
+
 impl Mul for FiniteElement {
     type Output = Self;
 
@@ -68,6 +95,18 @@ impl Mul for FiniteElement {
         }
         let num = (&self.num * &rhs.num) % &self.prime;
         Self::new(num, self.prime)
+    }
+}
+
+impl<'a, 'b> Mul<&'b FiniteElement> for &'a FiniteElement {
+    type Output = FiniteElement;
+
+    fn mul(self, other: &'b FiniteElement) -> FiniteElement {
+        if same_field(self, other) {
+            panic!("can't multiply numbers in different fields");
+        }
+        let num = (&self.num * &other.num) % &self.prime;
+        FiniteElement::new(num, self.prime.clone())
     }
 }
 
@@ -82,6 +121,20 @@ impl Div for FiniteElement {
             panic!("can't divide numbers in different fields");
         }
         self * rhs.pow(&BigInt::from(-1))
+    }
+}
+
+impl<'a, 'b> Div<&'b FiniteElement> for &'a FiniteElement {
+    type Output = FiniteElement;
+
+    fn div(self, other: &'b FiniteElement) -> FiniteElement {
+        if other.num == BigUint::from(0u32) {
+            panic!("can't divide by zero!");
+        }
+        if same_field(self, other) {
+            panic!("can't divide numbers in different fields");
+        }
+        self * &other.pow(&BigInt::from(-1))
     }
 }
 
@@ -126,10 +179,12 @@ mod tests {
         let a = FiniteElement::new(BigUint::from(2u32), BigUint::from(31u32));
         let b = FiniteElement::new(BigUint::from(15u32), BigUint::from(31u32));
         let res_add_a_b = FiniteElement::new(BigUint::from(17u32), BigUint::from(31u32));
+        assert_eq!(&a + &b, res_add_a_b);
         assert_eq!(a + b, res_add_a_b);
         let c = FiniteElement::new(BigUint::from(17u32), BigUint::from(31u32));
         let d = FiniteElement::new(BigUint::from(21u32), BigUint::from(31u32));
         let res_add_c_d = FiniteElement::new(BigUint::from(7u32), BigUint::from(31u32));
+        assert_eq!(&c + &d, res_add_c_d);
         assert_eq!(c + d, res_add_c_d);
     }
     
@@ -138,10 +193,12 @@ mod tests {
         let a = FiniteElement::new(BigUint::from(29u32), BigUint::from(31u32));
         let b = FiniteElement::new(BigUint::from(4u32), BigUint::from(31u32));
         let res_sub_a_b = FiniteElement::new(BigUint::from(25u32), BigUint::from(31u32));
+        assert_eq!(&a - &b, res_sub_a_b);
         assert_eq!(a - b, res_sub_a_b);
         let c = FiniteElement::new(BigUint::from(15u32), BigUint::from(31u32));
         let d = FiniteElement::new(BigUint::from(30u32), BigUint::from(31u32));
         let res_sub_c_d = FiniteElement::new(BigUint::from(16u32), BigUint::from(31u32));
+        assert_eq!(&c - &d, res_sub_c_d);
         assert_eq!(c - d, res_sub_c_d);
     }
 
@@ -150,6 +207,7 @@ mod tests {
         let a = FiniteElement::new(BigUint::from(24u32), BigUint::from(31u32));
         let b = FiniteElement::new(BigUint::from(19u32), BigUint::from(31u32));
         let res_mul_a_b = FiniteElement::new(BigUint::from(22u32), BigUint::from(31u32));
+        assert_eq!(&a * &b, res_mul_a_b);
         assert_eq!(a * b, res_mul_a_b);
     }
 
@@ -157,17 +215,21 @@ mod tests {
     fn test_pow() {
         let a = FiniteElement::new(BigUint::from(17u32), BigUint::from(31u32));
         let a_pow_3 = FiniteElement::new(BigUint::from(15u32), BigUint::from(31u32));
+        assert_eq!(&a.pow(&BigInt::from(3)), &a_pow_3);
         assert_eq!(a.pow(&BigInt::from(3)), a_pow_3);
         let b = FiniteElement::new(BigUint::from(5u32), BigUint::from(31u32));
         let c = FiniteElement::new(BigUint::from(18u32), BigUint::from(31u32));
         let res_b_pow_5_mul_c = FiniteElement::new(BigUint::from(16u32), BigUint::from(31u32));
+        assert_eq!(&b.pow(&BigInt::from(5)) * &c, res_b_pow_5_mul_c);
         assert_eq!(b.pow(&BigInt::from(5)) * c, res_b_pow_5_mul_c);
         let d = FiniteElement::new(BigUint::from(17u32), BigUint::from(31u32));
         let res_d_pow_minus3 =FiniteElement::new(BigUint::from(29u32), BigUint::from(31u32));
+        assert_eq!(&d.pow(&BigInt::from(-3)), &res_d_pow_minus3);
         assert_eq!(d.pow(&BigInt::from(-3)), res_d_pow_minus3);
         let e = FiniteElement::new(BigUint::from(4u32), BigUint::from(31u32));
         let f = FiniteElement::new(BigUint::from(11u32), BigUint::from(31u32));
         let res_e_pow_minus4_mul_f = FiniteElement::new(BigUint::from(13u32), BigUint::from(31u32));
+        assert_eq!(&e.pow(&BigInt::from(-4)) * &f, res_e_pow_minus4_mul_f);
         assert_eq!(e.pow(&BigInt::from(-4)) * f, res_e_pow_minus4_mul_f);
     }
 
@@ -176,6 +238,7 @@ mod tests {
         let a = FiniteElement::new(BigUint::from(3u32), BigUint::from(31u32));
         let b = FiniteElement::new(BigUint::from(24u32), BigUint::from(31u32));
         let res_div_a_b = FiniteElement::new(BigUint::from(4u32), BigUint::from(31u32));
+        assert_eq!(&a/&b, res_div_a_b);
         assert_eq!(a/b, res_div_a_b);
     }
 }

@@ -2,7 +2,6 @@ mod finite_field;
 mod elliptic_curve;
 
 use finite_field::FiniteElement;
-use elliptic_curve::{Coords, Point};
 
 use num_bigint::{BigUint, BigInt};
 
@@ -31,19 +30,19 @@ fn main() {
     let l = FiniteElement::new(BigUint::from(8u32), BigUint::from(13u32));
     println!("{}", k.pow(&BigInt::from(-3)) == l);
 
-    let a = 5;
-    let b = 7;
+    // let a = 5;
+    // let b = 7;
 
-    let x1 = BigInt::from(-1);
-    let y1 = BigInt::from(-1);
-    let p1 = Point::new(Coords::Finite(x1, y1), a, b);
-    println!("{:?}", p1);
+    // let x1 = BigInt::from(-1);
+    // let y1 = BigInt::from(-1);
+    // let p1 = Point::new(Coords::Finite(x1, y1), a, b);
+    // println!("{:?}", p1);
 
-    // let x2 = BigInt::from(-1);
-    // let y2 = BigInt::from(-2);
-    // let p2 = Point::new(Coords::Finite(x2, y2), a, b);
-    // println!("{:?}", p2);
+    // // let x2 = BigInt::from(-1);
+    // // let y2 = BigInt::from(-2);
+    // // let p2 = Point::new(Coords::Finite(x2, y2), a, b);
+    // // println!("{:?}", p2);
 
-    let p3 = Point::new(Coords::Infinity, a, b);
-    println!("{:#?}", p3);
+    // let p3 = Point::new(Coords::Infinity, a, b);
+    // println!("{:#?}", p3);
 }

@@ -187,6 +187,14 @@ mod tests {
         assert_eq!(&c + &d, res_add_c_d);
         assert_eq!(c + d, res_add_c_d);
     }
+
+    #[test]
+    #[should_panic]
+    fn test_add_elements_in_different_fields() {
+        let a = FiniteElement::new(BigUint::from(2u32), BigUint::from(31u32));
+        let b = FiniteElement::new(BigUint::from(15u32), BigUint::from(29u32));
+        let _ = a + b;
+    }
     
     #[test]
     fn test_sub() {
@@ -203,12 +211,28 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn test_sub_elements_in_different_fields() {
+        let a = FiniteElement::new(BigUint::from(2u32), BigUint::from(31u32));
+        let b = FiniteElement::new(BigUint::from(15u32), BigUint::from(29u32));
+        let _ = a - b;
+    }
+
+    #[test]
     fn test_mul() {
         let a = FiniteElement::new(BigUint::from(24u32), BigUint::from(31u32));
         let b = FiniteElement::new(BigUint::from(19u32), BigUint::from(31u32));
         let res_mul_a_b = FiniteElement::new(BigUint::from(22u32), BigUint::from(31u32));
         assert_eq!(&a * &b, res_mul_a_b);
         assert_eq!(a * b, res_mul_a_b);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_mul_elements_in_different_fields() {
+        let a = FiniteElement::new(BigUint::from(2u32), BigUint::from(31u32));
+        let b = FiniteElement::new(BigUint::from(15u32), BigUint::from(29u32));
+        let _ = a * b;
     }
 
     #[test]
@@ -240,5 +264,13 @@ mod tests {
         let res_div_a_b = FiniteElement::new(BigUint::from(4u32), BigUint::from(31u32));
         assert_eq!(&a/&b, res_div_a_b);
         assert_eq!(a/b, res_div_a_b);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_div_elements_in_different_fields() {
+        let a = FiniteElement::new(BigUint::from(2u32), BigUint::from(31u32));
+        let b = FiniteElement::new(BigUint::from(15u32), BigUint::from(29u32));
+        let _ = a / b;
     }
 }

@@ -25,6 +25,12 @@ impl Point {
     }  
 }
 
+impl PartialEq for Point {
+    fn eq(&self, other: &Self) -> bool {
+        self.xy == other.xy && self.a == other.a && self.b == other.b
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -49,5 +55,26 @@ mod tests {
         
         let p2 = Point::new(Coords::Infinity, a, b);
         assert_eq!(p2.xy, Coords::Infinity);
+    }
+
+    #[test]
+    fn test_eq() {
+        let a = 5;
+        let b = 7;
+        
+        let x1 = BigInt::from(3);
+        let y1 = BigInt::from(7);
+        let p1 = Point::new(Coords::Finite(x1, y1), a, b);
+        
+        let x2 = BigInt::from(3);
+        let y2 = BigInt::from(7);
+        let p2 = Point::new(Coords::Finite(x2, y2), a, b);
+        
+        let x3 = BigInt::from(18);
+        let y3 = BigInt::from(77);
+        let p3 = Point::new(Coords::Finite(x3, y3), a, b);
+
+        assert_eq!(p1, p2);
+        assert_ne!(p1, p3);
     }
 }

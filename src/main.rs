@@ -1,6 +1,7 @@
 mod finite_field;
 mod elliptic_curve;
 
+use elliptic_curve::{Coords, Point};
 use finite_field::FiniteElement;
 
 use num_bigint::{BigUint, BigInt};
@@ -45,4 +46,19 @@ fn main() {
 
     // let p3 = Point::new(Coords::Infinity, a, b);
     // println!("{:#?}", p3);
+    let prime = BigUint::from(223u32);
+    let a = FiniteElement::new(BigUint::ZERO, prime.clone());
+    let b = FiniteElement::new(BigUint::from(7u32), prime.clone());
+    
+    let x_1 = FiniteElement::new(BigUint::from(47u32), prime.clone());
+    let y_1 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+
+    let p =  Point::new(Coords::Finite(x_1, y_1), &a, &b);
+
+    for i in 1..=20 {
+        let res = &p * i;
+        println!("{} * (47, 71) = {:#?}", i, res);
+
+    }
+
 }

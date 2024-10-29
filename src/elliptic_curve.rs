@@ -1,23 +1,23 @@
 use num_bigint::{BigInt, BigUint};
 use std::ops::{Add, BitAnd, Mul};
 
-use crate::finite_field::FiniteElement;
+use crate::finite_field::FieldElement;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Coords {
     Infinity,
-    Finite(FiniteElement, FiniteElement),
+    Finite(FieldElement, FieldElement),
 }
 
 #[derive(Debug, Clone)]
 pub struct Point<'a> {
     xy: Coords,
-    a: &'a FiniteElement,
-    b: &'a FiniteElement,
+    a: &'a FieldElement,
+    b: &'a FieldElement,
 }
 
 impl<'a> Point<'a> {
-    pub fn new(xy: Coords, a: &'a FiniteElement, b: &'a FiniteElement) -> Self {
+    pub fn new(xy: Coords, a: &'a FieldElement, b: &'a FieldElement) -> Self {
         if let Coords::Finite(x, y) = &xy {
             if y.pow(&BigInt::from(2)) != &(x.pow(&BigInt::from(3)) + x*a) + b {
                     panic!("({:#?}, {:#?}) is not on the curve", x, y);     
@@ -52,11 +52,11 @@ impl Add for Point<'_> {
                             Point::new(Coords::Infinity, self.a, self.b)
                         } else {
                             if self == other {
-                                if *y1 == &FiniteElement::new(BigUint::ZERO, y1.prime.clone()) * x1 {
+                                if *y1 == &FieldElement::new(BigUint::ZERO, y1.prime.clone()) * x1 {
                                     return Point::new(Coords::Infinity, self.a, self.b);
                                 }
-                                let s= (&(&FiniteElement::new(BigUint::from(3u32), y1.prime.clone()) * &x1.pow(&BigInt::from(2u32))) + self.a) / (&FiniteElement::new(BigUint::from(2u32), y1.prime.clone()) * y1);
-                                let x = s.pow(&BigInt::from(2)) - &FiniteElement::new(BigUint::from(2u32), x1.prime.clone()) * x1;
+                                let s= (&(&FieldElement::new(BigUint::from(3u32), y1.prime.clone()) * &x1.pow(&BigInt::from(2u32))) + self.a) / (&FieldElement::new(BigUint::from(2u32), y1.prime.clone()) * y1);
+                                let x = s.pow(&BigInt::from(2)) - &FieldElement::new(BigUint::from(2u32), x1.prime.clone()) * x1;
                                 let y = &(s * (x1 - &x)) - y1;
                                 return Point::new(Coords::Finite(x, y), self.a, self.b);
                             } 
@@ -91,11 +91,11 @@ impl<'a> Add<&'a Point<'a>> for &'a Point<'_> {
                             Point::new(Coords::Infinity, self.a, self.b)
                         } else {
                             if self == other {
-                                if *y1 == FiniteElement::new(BigUint::ZERO, y1.prime.clone()) * x1.clone() {
+                                if *y1 == FieldElement::new(BigUint::ZERO, y1.prime.clone()) * x1.clone() {
                                     return Point::new(Coords::Infinity, self.a, self.b);
                                 }
-                                let s= (&(&FiniteElement::new(BigUint::from(3u32), y1.prime.clone()) * &x1.pow(&BigInt::from(2u32))) + self.a) / (&FiniteElement::new(BigUint::from(2u32), y1.prime.clone()) * y1);
-                                let x = s.pow(&BigInt::from(2)) - &FiniteElement::new(BigUint::from(2u32), x1.prime.clone()) * x1;
+                                let s= (&(&FieldElement::new(BigUint::from(3u32), y1.prime.clone()) * &x1.pow(&BigInt::from(2u32))) + self.a) / (&FieldElement::new(BigUint::from(2u32), y1.prime.clone()) * y1);
+                                let x = s.pow(&BigInt::from(2)) - &FieldElement::new(BigUint::from(2u32), x1.prime.clone()) * x1;
                                 let y = &(s * (x1 - &x)) - y1;
                                 return Point::new(Coords::Finite(x, y), self.a, self.b);
                             } 
@@ -130,11 +130,11 @@ impl<'a> Add<Point<'a>> for &'a Point<'_> {
                             Point::new(Coords::Infinity, self.a, self.b)
                         } else {
                             if *self == other {
-                                if *y1 == FiniteElement::new(BigUint::ZERO, y1.prime.clone()) * x1.clone() {
+                                if *y1 == FieldElement::new(BigUint::ZERO, y1.prime.clone()) * x1.clone() {
                                     return Point::new(Coords::Infinity, self.a, self.b);
                                 }
-                                let s= (&(&FiniteElement::new(BigUint::from(3u32), y1.prime.clone()) * &x1.pow(&BigInt::from(2u32))) + self.a) / (&FiniteElement::new(BigUint::from(2u32), y1.prime.clone()) * y1);
-                                let x = s.pow(&BigInt::from(2)) - &FiniteElement::new(BigUint::from(2u32), x1.prime.clone()) * x1;
+                                let s= (&(&FieldElement::new(BigUint::from(3u32), y1.prime.clone()) * &x1.pow(&BigInt::from(2u32))) + self.a) / (&FieldElement::new(BigUint::from(2u32), y1.prime.clone()) * y1);
+                                let x = s.pow(&BigInt::from(2)) - &FieldElement::new(BigUint::from(2u32), x1.prime.clone()) * x1;
                                 let y = &(s * (x1 - &x)) - y1;
                                 return Point::new(Coords::Finite(x, y), self.a, self.b);
                             } 
@@ -188,21 +188,21 @@ mod tests {
     #[test]
     fn test_new_valid_points() {
         let prime = BigUint::from(223u32);
-        let a = FiniteElement::new(BigUint::ZERO, prime.clone());
-        let b = FiniteElement::new(BigUint::from(7u32), prime.clone());
+        let a = FieldElement::new(BigUint::ZERO, prime.clone());
+        let b = FieldElement::new(BigUint::from(7u32), prime.clone());
         
-        let x_1 = FiniteElement::new(BigUint::from(192u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(105u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(192u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(105u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(17u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(56u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(17u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(56u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         Point::new(coord_2, &a, &b);
 
-        let x_3 = FiniteElement::new(BigUint::from(1u32), prime.clone());
-        let y_3 = FiniteElement::new(BigUint::from(193u32), prime.clone());
+        let x_3 = FieldElement::new(BigUint::from(1u32), prime.clone());
+        let y_3 = FieldElement::new(BigUint::from(193u32), prime.clone());
         let coord_3 = Coords::Finite(x_3, y_3);
         Point::new(coord_3, &a, &b);
     }
@@ -211,16 +211,16 @@ mod tests {
     #[should_panic]
     fn test_new_invalid_points() {
         let prime = BigUint::from(223u32);
-        let a = FiniteElement::new(BigUint::ZERO, prime.clone());
-        let b = FiniteElement::new(BigUint::from(7u32), prime.clone());
+        let a = FieldElement::new(BigUint::ZERO, prime.clone());
+        let b = FieldElement::new(BigUint::from(7u32), prime.clone());
         
-        let x_1 = FiniteElement::new(BigUint::from(200u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(119u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(200u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(119u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(42u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(99u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(42u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(99u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         Point::new(coord_2, &a, &b);
     }
@@ -228,21 +228,21 @@ mod tests {
     #[test]
     fn test_eq() {
         let prime = BigUint::from(223u32);
-        let a = FiniteElement::new(BigUint::ZERO, prime.clone());
-        let b = FiniteElement::new(BigUint::from(7u32), prime.clone());
+        let a = FieldElement::new(BigUint::ZERO, prime.clone());
+        let b = FieldElement::new(BigUint::from(7u32), prime.clone());
         
-        let x_1 = FiniteElement::new(BigUint::from(192u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(105u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(192u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(105u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(192u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(105u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(192u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(105u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        let x_3 = FiniteElement::new(BigUint::from(1u32), prime.clone());
-        let y_3 = FiniteElement::new(BigUint::from(193u32), prime.clone());
+        let x_3 = FieldElement::new(BigUint::from(1u32), prime.clone());
+        let y_3 = FieldElement::new(BigUint::from(193u32), prime.clone());
         let coord_3 = Coords::Finite(x_3, y_3);
         let p3 = Point::new(coord_3, &a, &b);
 
@@ -253,13 +253,13 @@ mod tests {
     #[test]
     fn test_add_inf() {
         let prime = BigUint::from(223u32);
-        let a = FiniteElement::new(BigUint::ZERO, prime.clone());
-        let b = FiniteElement::new(BigUint::from(7u32), prime.clone());
+        let a = FieldElement::new(BigUint::ZERO, prime.clone());
+        let b = FieldElement::new(BigUint::from(7u32), prime.clone());
 
         let p_inf = Point::new(Coords::Infinity, &a, &b);
         
-        let x_1 = FiniteElement::new(BigUint::from(192u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(105u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(192u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(105u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
@@ -276,57 +276,57 @@ mod tests {
     fn test_add() {
         // (192, 105, 17, 56, 170, 142)
         let prime = BigUint::from(223u32);
-        let a = FiniteElement::new(BigUint::ZERO, prime.clone());
-        let b = FiniteElement::new(BigUint::from(7u32), prime.clone());
+        let a = FieldElement::new(BigUint::ZERO, prime.clone());
+        let b = FieldElement::new(BigUint::from(7u32), prime.clone());
         
-        let x_1 = FiniteElement::new(BigUint::from(192u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(105u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(192u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(105u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(17u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(56u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(17u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(56u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        let x_3 = FiniteElement::new(BigUint::from(170u32), prime.clone());
-        let y_3 = FiniteElement::new(BigUint::from(142u32), prime.clone());
+        let x_3 = FieldElement::new(BigUint::from(170u32), prime.clone());
+        let y_3 = FieldElement::new(BigUint::from(142u32), prime.clone());
         let coord_3 = Coords::Finite(x_3, y_3);
         let p3 = Point::new(coord_3, &a, &b);
 
         assert_eq!(p1 + p2, p3);
 
         // (47, 71, 117, 141, 60, 139)
-        let x_1 = FiniteElement::new(BigUint::from(47u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(47u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(71u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(117u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(141u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(117u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(141u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        let x_3 = FiniteElement::new(BigUint::from(60u32), prime.clone());
-        let y_3 = FiniteElement::new(BigUint::from(139u32), prime.clone());
+        let x_3 = FieldElement::new(BigUint::from(60u32), prime.clone());
+        let y_3 = FieldElement::new(BigUint::from(139u32), prime.clone());
         let coord_3 = Coords::Finite(x_3, y_3);
         let p3 = Point::new(coord_3, &a, &b);
 
         assert_eq!(p1 + p2, p3);
 
         // (143, 98, 76, 66, 47, 71)
-        let x_1 = FiniteElement::new(BigUint::from(143u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(98u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(143u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(98u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(76u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(66u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(76u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(66u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        let x_3 = FiniteElement::new(BigUint::from(47u32), prime.clone());
-        let y_3 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+        let x_3 = FieldElement::new(BigUint::from(47u32), prime.clone());
+        let y_3 = FieldElement::new(BigUint::from(71u32), prime.clone());
         let coord_3 = Coords::Finite(x_3, y_3);
         let p3 = Point::new(coord_3, &a, &b);
 
@@ -337,76 +337,76 @@ mod tests {
     fn test_mul() {
         // (2, 192, 105, 49, 71)
         let prime = BigUint::from(223u32);
-        let a = FiniteElement::new(BigUint::ZERO, prime.clone());
-        let b = FiniteElement::new(BigUint::from(7u32), prime.clone());
+        let a = FieldElement::new(BigUint::ZERO, prime.clone());
+        let b = FieldElement::new(BigUint::from(7u32), prime.clone());
         
-        let x_1 = FiniteElement::new(BigUint::from(192u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(105u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(192u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(105u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(49u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(49u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(71u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
         assert_eq!(&p1 * 2u32, p2);
 
         // (2, 143, 98, 64, 168)
-        let x_1 = FiniteElement::new(BigUint::from(143u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(98u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(143u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(98u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(64u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(168u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(64u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(168u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
         assert_eq!(&p1 * 2u32, p2);
 
         // (2, 47, 71, 36, 111)
-        let x_1 = FiniteElement::new(BigUint::from(47u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(47u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(71u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(36u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(111u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(36u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(111u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
         assert_eq!(&p1 * 2u32, p2);
 
         // (4, 47, 71, 194, 51)
-        let x_1 = FiniteElement::new(BigUint::from(47u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(47u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(71u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(194u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(51u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(194u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(51u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
         assert_eq!(&p1 * 4u32, p2);
 
         // (8, 47, 71, 116, 55)
-        let x_1 = FiniteElement::new(BigUint::from(47u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(47u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(71u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 
-        let x_2 = FiniteElement::new(BigUint::from(116u32), prime.clone());
-        let y_2 = FiniteElement::new(BigUint::from(55u32), prime.clone());
+        let x_2 = FieldElement::new(BigUint::from(116u32), prime.clone());
+        let y_2 = FieldElement::new(BigUint::from(55u32), prime.clone());
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
         assert_eq!(&p1 * 8u32, p2);
 
         // (21, 47, 71, None, None)
-        let x_1 = FiniteElement::new(BigUint::from(47u32), prime.clone());
-        let y_1 = FiniteElement::new(BigUint::from(71u32), prime.clone());
+        let x_1 = FieldElement::new(BigUint::from(47u32), prime.clone());
+        let y_1 = FieldElement::new(BigUint::from(71u32), prime.clone());
         let coord_1 = Coords::Finite(x_1, y_1);
         let p1 = Point::new(coord_1, &a, &b);
 

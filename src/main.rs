@@ -8,27 +8,28 @@ use num_bigint::{BigUint, BigInt};
 
 
 fn main() {
-    let a = FieldElement::new(BigUint::from(7u32), BigUint::from(13u32));
-    let b = FieldElement::new(BigUint::from(6u32), BigUint::from(13u32));
+    let prime = BigUint::from(13u32);
+    let a = FieldElement::new(BigUint::from(7u32), &prime);
+    let b = FieldElement::new(BigUint::from(6u32), &prime);
     println!("{}", a == b);
     println!("{}", a != b);
 
-    let c = FieldElement::new(BigUint::from(7u32), BigUint::from(13u32));
-    let d = FieldElement::new(BigUint::from(12u32), BigUint::from(13u32));
-    let e = FieldElement::new(BigUint::from(6u32), BigUint::from(13u32));
+    let c = FieldElement::new(BigUint::from(7u32), &prime);
+    let d = FieldElement::new(BigUint::from(12u32), &prime);
+    let e = FieldElement::new(BigUint::from(6u32), &prime);
     println!("{}", c + d == e);
 
-    let f = FieldElement::new(BigUint::from(3u32), BigUint::from(13u32));
-    let g = FieldElement::new(BigUint::from(12u32), BigUint::from(13u32));
-    let h = FieldElement::new(BigUint::from(10u32), BigUint::from(13u32));
+    let f = FieldElement::new(BigUint::from(3u32), &prime);
+    let g = FieldElement::new(BigUint::from(12u32), &prime);
+    let h = FieldElement::new(BigUint::from(10u32), &prime);
     println!("{}", f * g == h);
 
-    let i = FieldElement::new(BigUint::from(3u32), BigUint::from(13u32));
-    let j = FieldElement::new(BigUint::from(1u32), BigUint::from(13u32));
+    let i = FieldElement::new(BigUint::from(3u32), &prime);
+    let j = FieldElement::new(BigUint::from(1u32), &prime);
     println!("{}", i.pow(&BigInt::from(3)) == j);
 
-    let k = FieldElement::new(BigUint::from(7u32), BigUint::from(13u32));
-    let l = FieldElement::new(BigUint::from(8u32), BigUint::from(13u32));
+    let k = FieldElement::new(BigUint::from(7u32), &prime);
+    let l = FieldElement::new(BigUint::from(8u32), &prime);
     println!("{}", k.pow(&BigInt::from(-3)) == l);
 
     // let a = 5;
@@ -47,11 +48,11 @@ fn main() {
     // let p3 = Point::new(Coords::Infinity, a, b);
     // println!("{:#?}", p3);
     let prime = BigUint::from(223u32);
-    let a = FieldElement::new(BigUint::ZERO, prime.clone());
-    let b = FieldElement::new(BigUint::from(7u32), prime.clone());
+    let a = FieldElement::new(BigUint::ZERO, &prime);
+    let b = FieldElement::new(BigUint::from(7u32), &prime);
     
-    let x_1 = FieldElement::new(BigUint::from(47u32), prime.clone());
-    let y_1 = FieldElement::new(BigUint::from(71u32), prime.clone());
+    let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
+    let y_1 = FieldElement::new(BigUint::from(71u32), &prime);
 
     let p =  Point::new(Coords::Finite(x_1, y_1), &a, &b);
 

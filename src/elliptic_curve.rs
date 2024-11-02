@@ -6,8 +6,12 @@ use crate::finite_field::{FieldElement, S256Field};
 use lazy_static::lazy_static;
 
 lazy_static! {
+    pub static ref N_S256: BigUint = BigUint::from_bytes_be(&hex::decode("fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141").unwrap());
+
     static ref A: S256Field<'static> = S256Field::new(BigUint::from(0u32));
     static ref B: S256Field<'static> = S256Field::new(BigUint::from(7u32));
+    static ref Gx: S256Field<'static> = S256Field::new(BigUint::from_bytes_be(&hex::decode("79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798").unwrap()));
+    static ref Gy: S256Field<'static> = S256Field::new(BigUint::from_bytes_be(&hex::decode("483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8").unwrap()));
 }
 
 #[derive(Debug, Clone)]
@@ -27,9 +31,13 @@ impl<'a> S256Point<'a> {
             CoordsS256::Infinity => S256Point { point: Point::at_inifity(&A.element, &B.element) },
             CoordsS256::Finite(s256_x, s256_y ) => {
 
-                return S256Point { point: Point::new(Coords::Finite(s256_x.element, s256_y.element), &A.element, &B.element) };
+                return S256Point { point: Point::new(Coords::Finite(s256_x.clone().element, s256_y.clone().element), &A.element, &B.element) };
             }
         }
+    }
+
+    pub fn generator() -> Self {
+        S256Point::new(CoordsS256::Finite(Gx.clone(), Gy.clone()))
     }
 }
 
@@ -37,8 +45,10 @@ impl<'a> Mul<&'a BigUint> for &'a S256Point<'a> {
     type Output = S256Point<'a>;
 
     fn mul(self, other: &'a BigUint) -> S256Point<'a> {
-        // TODO use other % N for coef
-        S256Point{ point: &self.point * other }
+        let one = BigUint::from(1u32);
+        let coef = other.modpow(&one, &N_S256);
+        let point = &self.point * coef;
+        S256Point{ point: point.clone() }
     }   
 }
 
@@ -183,7 +193,7 @@ impl<'a> Add<Point<'a>> for &'a Point<'a> {
     }
 }
 
-impl<'a> Mul<&'a BigUint> for &'a Point<'a> {
+impl<'a> Mul<BigUint> for &'a Point<'a> {
     type Output = Point<'a>;
 
     // fn mul(self, other: u32) -> Point<'a> {
@@ -194,17 +204,17 @@ impl<'a> Mul<&'a BigUint> for &'a Point<'a> {
     //     };
     //     prod
     // }   
-    fn mul(self, other: &'a BigUint) -> Point<'a> {
+    fn mul(self, other: BigUint) -> Point<'a> {
         
         let mut result= Point::new(Coords::Infinity, self.a, self.b);
         let mut current = self.clone();
-        let mut coef = other.clone();
+        let mut coef = other;
         let zero = BigUint::ZERO;
         let one = BigUint::from(1u32);
-        while &coef > &zero {
+        while coef > zero {
             let current1 = current.clone();
             let current2 = current;
-            if &coef.clone().bitand(&one) == &one {
+            if coef.clone().bitand(&one) == one {
                 result = result + current1.clone();
             }
             current = current1 + current2;
@@ -386,7 +396,7 @@ mod tests {
 
         let scalar = BigUint::from(2u32);
 
-        assert_eq!(&p1 * &scalar, p2);
+        assert_eq!(&p1 * scalar, p2);
 
         // (2, 143, 98, 64, 168)
         let x_1 = FieldElement::new(BigUint::from(143u32), &prime);
@@ -399,7 +409,9 @@ mod tests {
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        assert_eq!(&p1 * &scalar, p2);
+        let scalar = BigUint::from(2u32);
+
+        assert_eq!(&p1 * scalar, p2);
 
         // (2, 47, 71, 36, 111)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -412,7 +424,9 @@ mod tests {
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        assert_eq!(&p1 * &scalar, p2);
+        let scalar = BigUint::from(2u32);
+
+        assert_eq!(&p1 * scalar, p2);
 
         // (4, 47, 71, 194, 51)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -427,7 +441,7 @@ mod tests {
 
         let scalar = BigUint::from(4u32);
 
-        assert_eq!(&p1 * &scalar, p2);
+        assert_eq!(&p1 * scalar, p2);
 
         // (8, 47, 71, 116, 55)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -442,7 +456,7 @@ mod tests {
 
         let scalar = BigUint::from(8u32);
 
-        assert_eq!(&p1 * &scalar, p2);
+        assert_eq!(&p1 * scalar, p2);
 
         // (21, 47, 71, None, None)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -454,7 +468,7 @@ mod tests {
 
         let scalar = BigUint::from(21u32);
 
-        assert_eq!(&p1 * &scalar, p2);
+        assert_eq!(&p1 * scalar, p2);
 
     }
 }

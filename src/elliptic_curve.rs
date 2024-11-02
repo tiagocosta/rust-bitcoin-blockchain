@@ -227,6 +227,8 @@ impl<'a> Mul<BigUint> for &'a Point<'a> {
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use super::*;
 
     #[test]
@@ -470,5 +472,12 @@ mod tests {
 
         assert_eq!(&p1 * scalar, p2);
 
+    }
+
+    #[test]
+    fn test_s256_point_generator() {
+        let g = S256Point::generator();
+        let p = &g * &N_S256;
+        assert_eq!(p.point.xy, Coords::Infinity);
     }
 }

@@ -304,4 +304,10 @@ mod tests {
         let b = FieldElement::new(BigUint::from(15u32), &prime_2);
         let _ = a / b;
     }
+
+    #[test]
+    fn test_new_s256field() {
+        let new_s256field = S256Field::new(BigUint::from(15u32));
+        assert_eq!(*new_s256field.element.prime, *P)
+    }
 }

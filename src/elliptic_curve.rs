@@ -33,10 +33,10 @@ impl<'a> S256Point<'a> {
     }
 }
 
-impl<'a> Mul<u32> for &'a S256Point<'a> {
+impl<'a> Mul<&'a BigUint> for &'a S256Point<'a> {
     type Output = S256Point<'a>;
 
-    fn mul(self, other: u32) -> S256Point<'a> {
+    fn mul(self, other: &'a BigUint) -> S256Point<'a> {
         // TODO use other % N for coef
         S256Point{ point: &self.point * other }
     }   
@@ -183,7 +183,7 @@ impl<'a> Add<Point<'a>> for &'a Point<'a> {
     }
 }
 
-impl<'a> Mul<u32> for &'a Point<'a> {
+impl<'a> Mul<&'a BigUint> for &'a Point<'a> {
     type Output = Point<'a>;
 
     // fn mul(self, other: u32) -> Point<'a> {
@@ -194,19 +194,21 @@ impl<'a> Mul<u32> for &'a Point<'a> {
     //     };
     //     prod
     // }   
-    fn mul(self, other: u32) -> Point<'a> {
+    fn mul(self, other: &'a BigUint) -> Point<'a> {
         
         let mut result= Point::new(Coords::Infinity, self.a, self.b);
         let mut current = self.clone();
-        let mut coef = other;
-        while coef > 0 {
+        let mut coef = other.clone();
+        let zero = BigUint::ZERO;
+        let one = BigUint::from(1u32);
+        while &coef > &zero {
             let current1 = current.clone();
             let current2 = current;
-            if coef.bitand(1) == 1 {
+            if &coef.clone().bitand(&one) == &one {
                 result = result + current1.clone();
             }
             current = current1 + current2;
-            coef >>= 1;
+            coef >>= 1u32;
         };
 
         result
@@ -382,7 +384,9 @@ mod tests {
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        assert_eq!(&p1 * 2u32, p2);
+        let scalar = BigUint::from(2u32);
+
+        assert_eq!(&p1 * &scalar, p2);
 
         // (2, 143, 98, 64, 168)
         let x_1 = FieldElement::new(BigUint::from(143u32), &prime);
@@ -395,7 +399,7 @@ mod tests {
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        assert_eq!(&p1 * 2u32, p2);
+        assert_eq!(&p1 * &scalar, p2);
 
         // (2, 47, 71, 36, 111)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -408,7 +412,7 @@ mod tests {
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        assert_eq!(&p1 * 2u32, p2);
+        assert_eq!(&p1 * &scalar, p2);
 
         // (4, 47, 71, 194, 51)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -421,7 +425,9 @@ mod tests {
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        assert_eq!(&p1 * 4u32, p2);
+        let scalar = BigUint::from(4u32);
+
+        assert_eq!(&p1 * &scalar, p2);
 
         // (8, 47, 71, 116, 55)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -434,7 +440,9 @@ mod tests {
         let coord_2 = Coords::Finite(x_2, y_2);
         let p2 = Point::new(coord_2, &a, &b);
 
-        assert_eq!(&p1 * 8u32, p2);
+        let scalar = BigUint::from(8u32);
+
+        assert_eq!(&p1 * &scalar, p2);
 
         // (21, 47, 71, None, None)
         let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
@@ -444,7 +452,9 @@ mod tests {
 
         let p2 = Point::new(Coords::Infinity, &a, &b);
 
-        assert_eq!(&p1 * 21u32, p2);
+        let scalar = BigUint::from(21u32);
+
+        assert_eq!(&p1 * &scalar, p2);
 
     }
 }

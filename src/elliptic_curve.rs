@@ -227,8 +227,6 @@ impl<'a> Mul<BigUint> for &'a Point<'a> {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
-
     use super::*;
 
     #[test]

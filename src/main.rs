@@ -1,11 +1,7 @@
 mod finite_field;
 mod elliptic_curve;
 
-use finite_field::FieldElement;
-
 use elliptic_curve::{S256Point, N_S256};
-
-use num_bigint::{BigUint, BigInt};
 
 fn main() {
     // let prime = BigUint::from(13u32);

@@ -1,17 +1,22 @@
 use std::ops::{Add, Div, Mul, Sub};
 use num_bigint::{BigInt, BigUint, Sign, ToBigInt};
+use lazy_static::lazy_static;
 
-// #[derive(Debug, Clone)]
-// pub struct S256Field {
-//     element: FieldElement
-// }
+lazy_static! {
+    static ref P: BigUint = BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(32) - BigUint::from(977u32);
+}
 
-// impl S256Field {
-//     pub fn new (num: BigUint) -> Self {
-//         let prime = BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(32) - BigUint::from(977u32);
-//         S256Field { element: FieldElement::new(num, prime) }
-//     }
-// }
+
+#[derive(Debug, Clone)]
+pub struct S256Field<'a> {
+    pub element: FieldElement<'a>
+}
+
+impl<'a> S256Field<'a> {
+    pub fn new (num: BigUint) -> Self {
+        S256Field { element: FieldElement::new(num, &P) }
+    }
+}
 
 #[derive(Debug, Clone)]
 pub struct FieldElement<'a> {

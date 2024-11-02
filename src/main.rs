@@ -1,11 +1,9 @@
 mod finite_field;
 mod elliptic_curve;
 
-use elliptic_curve::{Coords, Point};
 use finite_field::FieldElement;
 
 use num_bigint::{BigUint, BigInt};
-
 
 fn main() {
     let prime = BigUint::from(13u32);
@@ -47,19 +45,16 @@ fn main() {
 
     // let p3 = Point::new(Coords::Infinity, a, b);
     // println!("{:#?}", p3);
-    let prime = BigUint::from(223u32);
-    let a = FieldElement::new(BigUint::ZERO, &prime);
-    let b = FieldElement::new(BigUint::from(7u32), &prime);
     
-    let x_1 = FieldElement::new(BigUint::from(47u32), &prime);
-    let y_1 = FieldElement::new(BigUint::from(71u32), &prime);
+    // let x_1 = S256Field::new(BigUint::from(47u32));
+    // let y_1 = S256Field::new(BigUint::from(71u32));
 
-    let p =  Point::new(Coords::Finite(x_1, y_1), &a, &b);
+    // let p =  S256Point::new(CoordsS256::Finite(x_1, y_1));
 
-    for i in 1..=20 {
-        let res = &p * i;
-        println!("{} * (47, 71) = {:#?}", i, res);
+    // for i in 1..=20 {
+    //     let res = &p * i;
+    //     println!("{} * (47, 71) = {:#?}", i, res);
 
-    }
-
+    // }
+    
 }

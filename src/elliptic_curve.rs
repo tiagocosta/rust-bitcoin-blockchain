@@ -1,23 +1,62 @@
 use num_bigint::{BigInt, BigUint};
 use std::ops::{Add, BitAnd, Mul};
 
-use crate::finite_field::FieldElement;
+use crate::finite_field::{FieldElement, S256Field};
+
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref A: S256Field<'static> = S256Field::new(BigUint::from(0u32));
+    static ref B: S256Field<'static> = S256Field::new(BigUint::from(7u32));
+}
+
+#[derive(Debug, Clone)]
+pub enum CoordsS256<'a> {
+    Infinity,
+    Finite(S256Field<'a>, S256Field<'a>),
+}
+
+#[derive(Debug, Clone)]
+pub struct S256Point<'a> {
+    point: Point<'a>
+}
+
+impl<'a> S256Point<'a> {
+    pub fn new (xy: CoordsS256<'a>) -> Self {
+        match xy {
+            CoordsS256::Infinity => S256Point { point: Point::at_inifity(&A.element, &B.element) },
+            CoordsS256::Finite(s256_x, s256_y ) => {
+
+                return S256Point { point: Point::new(Coords::Finite(s256_x.element, s256_y.element), &A.element, &B.element) };
+            }
+        }
+    }
+}
+
+impl<'a> Mul<u32> for &'a S256Point<'a> {
+    type Output = S256Point<'a>;
+
+    fn mul(self, other: u32) -> S256Point<'a> {
+        // TODO use other % N for coef
+        S256Point{ point: &self.point * other }
+    }   
+}
 
 #[derive(Debug, PartialEq, Clone)]
-pub enum Coords<'a> {
+enum Coords<'a> {
     Infinity,
     Finite(FieldElement<'a>, FieldElement<'a>),
 }
 
 #[derive(Debug, Clone)]
-pub struct Point<'a> {
+struct Point<'a> {
     xy: Coords<'a>,
     a: &'a FieldElement<'a>,
     b: &'a FieldElement<'a>,
 }
 
 impl<'a> Point<'a> {
-    pub fn new(xy: Coords<'a>, a: &'a FieldElement, b: &'a FieldElement) -> Self {
+    fn new(xy: Coords<'a>, a: &'a FieldElement, b: &'a FieldElement) -> Self {
         if let Coords::Finite(x, y) = &xy {
             if y.pow(&BigInt::from(2)) != &(x.pow(&BigInt::from(3)) + x*a) + b {
                     panic!("({:#?}, {:#?}) is not on the curve", x, y);     
@@ -27,7 +66,7 @@ impl<'a> Point<'a> {
         Point { xy, a, b }
     }
 
-    pub fn at_inifity(a: &'a FieldElement, b: &'a FieldElement) -> Self {
+    fn at_inifity(a: &'a FieldElement, b: &'a FieldElement) -> Self {
         Point::new(Coords::Infinity, a, b)
     }
 

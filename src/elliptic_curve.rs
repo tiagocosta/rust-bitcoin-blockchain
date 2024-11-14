@@ -21,17 +21,15 @@ pub enum CoordsS256<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct S256Point<'a> {
-    point: Point<'a>
-}
+pub struct S256Point<'a>(Point<'a>);
 
 impl<'a> S256Point<'a> {
     pub fn new (xy: CoordsS256<'a>) -> Self {
         match xy {
-            CoordsS256::Infinity => S256Point { point: Point::at_inifity(&A.element, &B.element) },
+            CoordsS256::Infinity => S256Point(Point::at_inifity(&A.0, &B.0)),
             CoordsS256::Finite(s256_x, s256_y ) => {
 
-                return S256Point { point: Point::new(Coords::Finite(s256_x.clone().element, s256_y.clone().element), &A.element, &B.element) };
+                return S256Point(Point::new(Coords::Finite(s256_x.0, s256_y.0), &A.0, &B.0));
             }
         }
     }
@@ -47,8 +45,8 @@ impl<'a> Mul<&'a BigUint> for &'a S256Point<'a> {
     fn mul(self, other: &'a BigUint) -> S256Point<'a> {
         let one = BigUint::from(1u32);
         let coef = other.modpow(&one, &N_S256);
-        let point = &self.point * coef;
-        S256Point{ point: point.clone() }
+        let point = &self.0 * coef;
+        S256Point(point)
     }   
 }
 
@@ -476,6 +474,6 @@ mod tests {
     fn test_s256_point_generator() {
         let g = S256Point::generator();
         let p = &g * &N_S256;
-        assert_eq!(p.point.xy, Coords::Infinity);
+        assert_eq!(p.0.xy, Coords::Infinity);
     }
 }

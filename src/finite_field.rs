@@ -8,13 +8,11 @@ lazy_static! {
 
 
 #[derive(Debug, Clone)]
-pub struct S256Field<'a> {
-    pub element: FieldElement<'a>
-}
+pub struct S256Field<'a> (pub FieldElement<'a>);
 
 impl<'a> S256Field<'a> {
     pub fn new (num: BigUint) -> Self {
-        S256Field { element: FieldElement::new(num, &P) }
+        S256Field(FieldElement::new(num, &P))
     }
 }
 
@@ -308,6 +306,6 @@ mod tests {
     #[test]
     fn test_new_s256field() {
         let new_s256field = S256Field::new(BigUint::from(15u32));
-        assert_eq!(*new_s256field.element.prime, *P)
+        assert_eq!(*new_s256field.0.prime, *P)
     }
 }

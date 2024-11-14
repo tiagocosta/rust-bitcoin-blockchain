@@ -50,6 +50,19 @@ impl<'a> Mul<&'a BigUint> for &'a S256Point<'a> {
     }   
 }
 
+impl<'a> Add<&'a S256Point<'a>> for &'a S256Point<'_> {
+    type Output = S256Point<'a>;
+
+    fn add(self, other: &'a S256Point) -> S256Point<'a> {
+        let p = &self.0 + &other.0;
+        match p.xy {
+            Coords::Infinity => S256Point::new(CoordsS256::Infinity),
+            Coords::Finite(x, y) => 
+                S256Point::new(CoordsS256::Finite(S256Field::new(x.num), S256Field::new(y.num)))
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 enum Coords<'a> {
     Infinity,

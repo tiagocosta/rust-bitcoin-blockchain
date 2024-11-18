@@ -21,7 +21,7 @@ pub enum CoordsS256<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct S256Point<'a>(Point<'a>);
+pub struct S256Point<'a>(pub Point<'a>);
 
 impl<'a> S256Point<'a> {
     pub fn new (xy: CoordsS256<'a>) -> Self {
@@ -36,6 +36,13 @@ impl<'a> S256Point<'a> {
 
     pub fn generator() -> Self {
         S256Point::new(CoordsS256::Finite(Gx.clone(), Gy.clone()))
+    }
+
+    pub fn xy(&self) -> Option<(&BigUint, &BigUint)> {
+        match &self.0.xy {
+            Coords::Finite(x, y) => Some((&x.num, &y.num)),
+            _ => None,
+        }
     }
 }
 
@@ -70,7 +77,7 @@ enum Coords<'a> {
 }
 
 #[derive(Debug, Clone)]
-struct Point<'a> {
+pub struct Point<'a> {
     xy: Coords<'a>,
     a: &'a FieldElement<'a>,
     b: &'a FieldElement<'a>,

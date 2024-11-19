@@ -2,8 +2,9 @@ mod finite_field;
 mod elliptic_curve;
 mod cripto;
 
-// use elliptic_curve::{S256Point, N_S256};
-// use num_bigint::{BigInt, BigUint};
+use elliptic_curve::{S256Point, N_S256};
+use num_bigint::BigUint;
+use sha2::{Sha256, Digest};
 
 fn main() {
     // let prime = BigUint::from(13u32);
@@ -73,29 +74,29 @@ fn main() {
     // let hash = hasher.finalize();
     // println!("Binary hash: {:?}", hash[..]);
 
-    // let e = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my secret")));
-    // let z = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my message")));
-    // let k = BigUint::from(1234567890u32);
-    // // let k = BigUint::from(1u32);
+    let e = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my secret")));
+    let z = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my message")));
+    let k = BigUint::from(1234567890u32);
+    // let k = BigUint::from(1u32);
 
-    // let g = S256Point::generator();
+    let g = S256Point::generator();
 
-    // let p = &g * &k;
+    let p = &g * &k;
 
-    // let r = p.xy().unwrap().0;
+    let r = p.xy().unwrap().0;
 
-    // let k_inv = k.modinv(&N_S256).unwrap();
-    // // println!("{:#?}", hex::decode(hash).unwrap());
-    // // println!("{}", k_inv);
-    // let one = BigUint::from(1u32);
-    // let s = ((&z + r*&e) * k_inv).modpow(&one, &N_S256);
+    let k_inv = k.modinv(&N_S256).unwrap();
+    // println!("{:#?}", hex::decode(hash).unwrap());
+    // println!("{}", k_inv);
+    let one = BigUint::from(1u32);
+    let s = ((&z + r*&e) * k_inv).modpow(&one, &N_S256);
 
-    // let point = &g * &e;
+    let point = &g * &e;
 
-    // // println!("{:#?}", point);
-    // println!("{}", hex::encode(point.xy().unwrap().0.to_bytes_be()));
-    // println!("{}", hex::encode(point.xy().unwrap().1.to_bytes_be()));
-    // println!("{}", hex::encode(z.to_bytes_be()));
-    // println!("{}", hex::encode(r.to_bytes_be()));
+    // println!("{:#?}", point);
+    println!("{}", hex::encode(point.xy().unwrap().0.to_bytes_be()));
+    println!("{}", hex::encode(point.xy().unwrap().1.to_bytes_be()));
+    println!("{}", hex::encode(z.to_bytes_be()));
+    println!("{}", hex::encode(r.to_bytes_be()));
     // println!("{}", hex::encode(s.to_bytes_be()));
 }

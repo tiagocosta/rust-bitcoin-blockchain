@@ -1,6 +1,7 @@
 use num_bigint::{BigInt, BigUint};
 use std::ops::{Add, BitAnd, Mul};
 
+use crate::cripto::Signature;
 use crate::finite_field::{FieldElement, S256Field};
 
 use lazy_static::lazy_static;
@@ -42,6 +43,21 @@ impl<'a> S256Point<'a> {
         match &self.0.xy {
             Coords::Finite(x, y) => Some((&x.num, &y.num)),
             _ => None,
+        }
+    }
+
+    pub fn verify(&self, z: &BigUint, sig: &Signature) -> bool {
+        let one = BigUint::from(1u32);
+        let s_inv = &sig.s.modinv(&N_S256).unwrap();
+        let u = (z * s_inv).modpow(&one, &N_S256);
+        let v = (&sig.r * s_inv).modpow(&one, &N_S256);
+        let g = S256Point::generator();
+        let ug = &g * &u;
+        let vp = self * &v;
+        let r_point = &ug + &vp;
+        match r_point.xy() {
+            Some((x, _)) => *x == sig.r,
+            None=> false,
         }
     }
 }
@@ -495,5 +511,22 @@ mod tests {
         let g = S256Point::generator();
         let p = &g * &N_S256;
         assert_eq!(p.0.xy, Coords::Infinity);
+    }
+
+    #[test]
+    fn test_s256_verify() {
+        let x = BigUint::from_bytes_be(&hex::decode("887387e452b8eacc4acfde10d9aaf7f6d9a0f975aabb10d006e4da568744d06c").unwrap());
+        let y = BigUint::from_bytes_be(&hex::decode("61de6d95231cd89026e286df3b6ae4a894a3378e393e93a0f45b666329a0ae34").unwrap());
+        let point = S256Point::new(CoordsS256::Finite(S256Field::new(x), S256Field::new(y)));
+        let z = BigUint::from_bytes_be(&hex::decode("ec208baa0fc1c19f708a9ca96fdeff3ac3f230bb4a7ba4aede4942ad003c0f60").unwrap());
+        let r = BigUint::from_bytes_be(&hex::decode("ac8d1c87e51d0d441be8b3dd5b05c8795b48875dffe00b7ffcfac23010d3a395").unwrap());
+        let s = BigUint::from_bytes_be(&hex::decode("068342ceff8935ededd102dd876ffd6ba72d6a427a3edb13d26eb0781cb423c4").unwrap());
+        let sig = Signature::new(r, s);
+        assert!(point.verify(&z, &sig));
+        let z = BigUint::from_bytes_be(&hex::decode("7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d").unwrap());
+        let r = BigUint::from_bytes_be(&hex::decode("00eff69ef2b1bd93a66ed5219add4fb51e11a840f404876325a1e8ffe0529a2c").unwrap());
+        let s = BigUint::from_bytes_be(&hex::decode("c7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab6").unwrap());
+        let sig = Signature::new(r, s);
+        assert!(point.verify(&z, &sig));
     }
 }

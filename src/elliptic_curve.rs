@@ -57,7 +57,7 @@ impl<'a> S256Point<'a> {
         let r_point = &ug + &vp;
         match r_point.xy() {
             Some((x, _)) => *x == sig.r,
-            None=> false,
+            None => false,
         }
     }
 }

@@ -60,6 +60,28 @@ impl<'a> S256Point<'a> {
             None => false,
         }
     }
+
+    pub fn uncompressed_sec(&self) -> Vec<u8> {
+        let (x, y) = self.xy().unwrap();
+        let mut x_be = x.to_bytes_be();
+        let mut y_be = y.to_bytes_be();
+        let mut marker_be = BigUint::parse_bytes(b"04", 32).unwrap().to_bytes_be();
+        marker_be.append(&mut x_be);
+        marker_be.append(&mut y_be);
+        marker_be
+    }
+
+    pub fn compressed_sec(&self) -> Vec<u8> {
+        let (x, y) = self.xy().unwrap();
+        let mut marker = b"03";
+        if y.modpow(&BigUint::from(1u32), &BigUint::from(2u32)) == BigUint::ZERO {
+            marker = b"02";
+        }
+        let mut marker_be = BigUint::parse_bytes(marker, 32).unwrap().to_bytes_be();
+        let mut x_be = x.to_bytes_be();
+        marker_be.append(&mut x_be);
+        marker_be
+    }
 }
 
 impl<'a> Mul<&'a BigUint> for &'a S256Point<'a> {
@@ -528,5 +550,30 @@ mod tests {
         let s = BigUint::from_bytes_be(&hex::decode("c7207fee197d27c618aea621406f6bf5ef6fca38681d82b2f06fddbdce6feab6").unwrap());
         let sig = Signature::new(r, s);
         assert!(point.verify(&z, &sig));
+    }
+
+    #[test]
+    fn test_s256_sec() {
+        let mut uncompressed = "049d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d56fa15cc7f3d38cda98dee2419f415b7513dde1301f8643cd9245aea7f3f911f9";
+        let mut compressed = "039d5ca49670cbe4c3bfa84c96a8c87df086c6ea6a24ba6b809c9de234496808d5";
+        let g = S256Point::generator();
+        let mut coef = BigUint::from(999u32).pow(3);
+        let mut point = &g * &coef;
+        assert_eq!(point.uncompressed_sec(), hex::decode(uncompressed).unwrap());
+        assert_eq!(point.compressed_sec(), hex::decode(compressed).unwrap());
+
+        coef = BigUint::from(123u32);
+        uncompressed = "04a598a8030da6d86c6bc7f2f5144ea549d28211ea58faa70ebf4c1e665c1fe9b5204b5d6f84822c307e4b4a7140737aec23fc63b65b35f86a10026dbd2d864e6b";
+        compressed = "03a598a8030da6d86c6bc7f2f5144ea549d28211ea58faa70ebf4c1e665c1fe9b5";
+        point = &g * &coef;
+        assert_eq!(point.uncompressed_sec(), hex::decode(uncompressed).unwrap());
+        assert_eq!(point.compressed_sec(), hex::decode(compressed).unwrap());
+
+        coef = BigUint::from(42424242u32);
+        uncompressed = "04aee2e7d843f7430097859e2bc603abcc3274ff8169c1a469fee0f20614066f8e21ec53f40efac47ac1c5211b2123527e0e9b57ede790c4da1e72c91fb7da54a3";
+        compressed = "03aee2e7d843f7430097859e2bc603abcc3274ff8169c1a469fee0f20614066f8e";
+        point = &g * &coef;
+        assert_eq!(point.uncompressed_sec(), hex::decode(uncompressed).unwrap());
+        assert_eq!(point.compressed_sec(), hex::decode(compressed).unwrap());
     }
 }

@@ -99,4 +99,9 @@ fn main() {
     println!("{}", hex::encode(z.to_bytes_be()));
     println!("{}", hex::encode(r.to_bytes_be()));
     // println!("{}", hex::encode(s.to_bytes_be()));
+
+    let coef = BigUint::from(999u32).pow(3);
+    let point = &g * &coef;
+    println!("{:#?}", hex::encode(point.uncompressed_sec()));
+    println!("{:#?}", hex::encode(point.compressed_sec()));
 }

@@ -92,15 +92,14 @@ impl<'a> S256Point<'a> {
 
         let is_even = sec_bin[0] == 2u8;
         let x = S256Field::new(BigUint::from_bytes_be(&sec_bin[1..]));
-        let alpha = S256Field::new((&x.0.pow(&BigInt::from(3)) + &B.0).num);
+        let alpha = S256Field::from_S256_field(x.pow(&BigInt::from(3)) + B.clone());
         let beta = alpha.sqrt();
         let mut even_beta = beta.clone();
-        let mut odd_beta = S256Field::new(&P.clone() - beta.clone().0.num);
-        if beta.0.num.modpow(&BigUint::from(1u32), &BigUint::from(2u32)) != BigUint::ZERO {
-            even_beta = S256Field::new(&P.clone() - beta.clone().0.num);
+        let mut odd_beta = S256Field::new(P.clone() - beta.num());
+        if beta.num().modpow(&BigUint::from(1u32), &BigUint::from(2u32)) != BigUint::ZERO {
+            even_beta = S256Field::new(P.clone() - beta.num());
             odd_beta = beta;
         }
-
         if is_even {
             S256Point::new(CoordsS256::Finite(x, even_beta))
         } else {

@@ -35,7 +35,10 @@ impl PrivateKey {
             None => panic!("infinity"),
         };
         let k_inv = &k.modinv(&N_S256).unwrap();
-        let s = ((z + r*&self.secret) * k_inv).modpow(&one, &N_S256);
+        let mut s = ((z + r*&self.secret) * k_inv).modpow(&one, &N_S256);
+        if s > N_S256.clone()/BigUint::from(2u32) {
+            s = N_S256.clone() - s;
+        }
         Signature::new(r.clone(), s)
     }
 }

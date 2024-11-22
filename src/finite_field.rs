@@ -3,7 +3,7 @@ use num_bigint::{BigInt, BigUint, Sign, ToBigInt};
 use lazy_static::lazy_static;
 
 lazy_static! {
-    static ref P: BigUint = BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(32) - BigUint::from(977u32);
+    pub static ref P: BigUint = BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(32) - BigUint::from(977u32);
 }
 
 
@@ -11,8 +11,17 @@ lazy_static! {
 pub struct S256Field<'a> (pub FieldElement<'a>);
 
 impl<'a> S256Field<'a> {
-    pub fn new (num: BigUint) -> Self {
+    pub fn new(num: BigUint) -> Self {
         S256Field(FieldElement::new(num, &P))
+    }
+
+    pub fn sqrt(&self) -> Self {
+        let exp = (&P.clone() + BigUint::from(1u32)) / BigUint::from(4u32);
+        S256Field(self.0.pow(&exp.to_bigint().unwrap()))
+    }
+
+    pub fn pow(&self, exp: &BigInt) -> Self {
+        S256Field(self.0.pow(&exp.to_bigint().unwrap()))
     }
 }
 

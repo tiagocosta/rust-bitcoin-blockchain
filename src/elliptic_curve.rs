@@ -2,7 +2,7 @@ use num_bigint::{BigInt, BigUint};
 use std::ops::{Add, BitAnd, Mul};
 
 use crate::cripto::Signature;
-use crate::finite_field::{FieldElement, S256Field};
+use crate::finite_field::{FieldElement, S256Field, P};
 
 use lazy_static::lazy_static;
 
@@ -81,6 +81,31 @@ impl<'a> S256Point<'a> {
         let mut x_be = x.to_bytes_be();
         marker_be.append(&mut x_be);
         marker_be
+    }
+
+    pub fn parse(&self, sec_bin: &[u8]) -> Self {
+        if sec_bin[0] == 4u8 {
+            let x = BigUint::from_bytes_be(&sec_bin[1..33]);
+            let y = BigUint::from_bytes_be(&sec_bin[33..]);
+            return S256Point::new(CoordsS256::Finite(S256Field::new(x), S256Field::new(y)));
+        }
+
+        let is_even = sec_bin[0] == 2u8;
+        let x = S256Field::new(BigUint::from_bytes_be(&sec_bin[1..]));
+        let alpha = S256Field::new((&x.0.pow(&BigInt::from(3)) + &B.0).num);
+        let beta = alpha.sqrt();
+        let mut even_beta = beta.clone();
+        let mut odd_beta = S256Field::new(&P.clone() - beta.clone().0.num);
+        if beta.0.num.modpow(&BigUint::from(1u32), &BigUint::from(2u32)) != BigUint::ZERO {
+            even_beta = S256Field::new(&P.clone() - beta.clone().0.num);
+            odd_beta = beta;
+        }
+
+        if is_even {
+            S256Point::new(CoordsS256::Finite(x, even_beta))
+        } else {
+            S256Point::new(CoordsS256::Finite(x, odd_beta))
+        }
     }
 }
 
@@ -575,5 +600,22 @@ mod tests {
         point = &g * &coef;
         assert_eq!(point.uncompressed_sec(), hex::decode(uncompressed).unwrap());
         assert_eq!(point.compressed_sec(), hex::decode(compressed).unwrap());
+    }
+
+    #[test]
+    fn test_s256_parse() {
+        let g = S256Point::generator();
+        let mut coef = BigUint::from(999u32).pow(3);
+        let mut point = &g * &coef;
+        let mut sec_bin = point.uncompressed_sec();
+        let mut parsed_point = point.parse(&sec_bin);
+        assert_eq!(parsed_point.0, point.0);
+
+        coef = BigUint::from(123u32);
+        point = &g * &coef;
+        sec_bin = point.compressed_sec();
+        parsed_point = point.parse(&sec_bin);
+        assert_eq!(parsed_point.0, point.0);
+        
     }
 }

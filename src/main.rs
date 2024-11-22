@@ -102,6 +102,8 @@ fn main() {
 
     let coef = BigUint::from(999u32).pow(3);
     let point = &g * &coef;
-    println!("{:#?}", hex::encode(point.uncompressed_sec()));
-    println!("{:#?}", hex::encode(point.compressed_sec()));
+    // println!("{:#?}", hex::encode(point.uncompressed_sec()));
+    // println!("{:#?}", hex::encode(point.compressed_sec()));
+    println!("{}", point.uncompressed_sec()[0]);
+    println!("{}", point.compressed_sec()[0]);
 }

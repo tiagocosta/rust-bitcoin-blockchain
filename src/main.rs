@@ -123,7 +123,7 @@ fn main() {
     let b58 = bs58::encode(bin);
     println!("{:?}", b58.into_string());
 
-    let sha = Sha256::digest(Sha256::digest(b"my secret"));
+    let sha = Sha256::digest(b"my secret");
     println!("{:?}", sha);
     let mut rip = ripemd::Ripemd160::new();
     rip.update(sha);

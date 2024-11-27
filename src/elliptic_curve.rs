@@ -1,7 +1,7 @@
 use num_bigint::{BigInt, BigUint};
 use std::ops::{Add, BitAnd, Mul};
 
-use crate::cripto::Signature;
+use crate::cripto::{hash160, encode_base58_checksum, Signature};
 use crate::finite_field::{FieldElement, S256Field, P};
 
 use lazy_static::lazy_static;
@@ -105,6 +105,23 @@ impl<'a> S256Point<'a> {
         } else {
             S256Point::new(CoordsS256::Finite(x, odd_beta))
         }
+    }
+
+    pub fn address(&self, compressed: bool, testnet: bool) -> String {
+        let mut h160= if compressed {
+            hash160(&self.compressed_sec())
+        } else {
+            hash160(&self.uncompressed_sec())
+        };
+
+        let prefix = if testnet {
+            hex::decode("6f").unwrap()[0]
+        } else {
+            hex::decode("00").unwrap()[0]
+        };
+
+        h160.insert(0, prefix);
+        encode_base58_checksum(&h160)
     }
 }
 
@@ -616,5 +633,30 @@ mod tests {
         parsed_point = point.parse(&sec_bin);
         assert_eq!(parsed_point.0, point.0);
         
+    }
+
+    #[test]
+    fn test_s256_address() {
+        let g = S256Point::generator();
+        let mut secret = BigUint::from(888u32).pow(3);
+        let mut point = &g * &secret;
+        let mut mainnet_address = "148dY81A9BmdpMhvYEVznrM45kWN32vSCN";
+        let mut testnet_address = "mieaqB68xDCtbUBYFoUNcmZNwk74xcBfTP";
+        assert_eq!(point.address(true, false), mainnet_address);
+        assert_eq!(point.address(true, true), testnet_address);
+
+        secret = BigUint::from(321u32);
+        point = &g * &secret;
+        mainnet_address = "1S6g2xBJSED7Qr9CYZib5f4PYVhHZiVfj";
+        testnet_address = "mfx3y63A7TfTtXKkv7Y6QzsPFY6QCBCXiP";
+        assert_eq!(point.address(false, false), mainnet_address);
+        assert_eq!(point.address(false, true), testnet_address);
+
+        secret = BigUint::from(4242424242u32);
+        point = &g * &secret;
+        mainnet_address = "1226JSptcStqn4Yq9aAmNXdwdc2ixuH9nb";
+        testnet_address = "mgY3bVusRUL6ZB2Ss999CSrGVbdRwVpM8s";
+        assert_eq!(point.address(false, false), mainnet_address);
+        assert_eq!(point.address(false, true), testnet_address);
     }
 }

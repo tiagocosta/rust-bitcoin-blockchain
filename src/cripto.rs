@@ -68,6 +68,18 @@ impl PrivateKey {
 }
 
 pub fn hash160(bytes: &[u8]) -> Vec<u8> {
+    let mut sha_hasher = Sha256::new();
+    sha_hasher.update(bytes);
+    let res_1 = sha_hasher.finalize();
+
+    let mut ripemd_hasher = ripemd::Ripemd160::new();
+    ripemd_hasher.update(res_1);
+    let res = ripemd_hasher.finalize();
+    
+    res.to_vec()
+}
+
+pub fn hash256(bytes: &[u8]) -> Vec<u8> {
     let mut sha_hasher_1 = Sha256::new();
     sha_hasher_1.update(bytes);
     let res_1 = sha_hasher_1.finalize();
@@ -75,12 +87,15 @@ pub fn hash160(bytes: &[u8]) -> Vec<u8> {
     let mut sha_hasher_2 = Sha256::new();
     sha_hasher_2.update(res_1);
     let res_2 = sha_hasher_2.finalize();
-
-    let mut ripemd_hasher = ripemd::Ripemd160::new();
-    ripemd_hasher.update(res_2);
-    let res_3 = ripemd_hasher.finalize();
     
-    res_3.to_vec()
+    res_2.to_vec()
+}
+
+pub fn encode_base58_checksum(bytes: &[u8]) -> String {
+    let checksum = &hash256(bytes)[..4];
+    let mut to_be_encoded = bytes.to_vec();
+    to_be_encoded.append(&mut checksum.to_vec());
+    bs58::encode(to_be_encoded).into_string()
 }
 
 #[cfg(test)]
@@ -113,7 +128,7 @@ mod tests {
     #[test]
     fn test_hash160() {
         let hash_160 = hash160(b"my secret");
-        let hash160_my_secret = [183, 132, 93, 197, 210, 216, 71, 204, 195, 149, 24, 146, 214, 215, 22, 109, 28, 173, 123, 75];
+        let hash160_my_secret = [144, 228, 193, 75, 235, 6, 103, 99, 58, 142, 47, 92, 110, 148, 240, 140, 171, 139, 187, 93];
         assert_eq!(hash_160, hash160_my_secret);
     }
 }

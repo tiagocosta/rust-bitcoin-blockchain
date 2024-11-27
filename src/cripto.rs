@@ -65,6 +65,24 @@ impl PrivateKey {
         }
         Signature::new(r.clone(), s)
     }
+
+    pub fn wif(&self, compressed: bool, testnet: bool) -> String {
+        let prefix = if testnet {
+            hex::decode("ef").unwrap()[0]
+        } else {
+            hex::decode("80").unwrap()[0]
+        };
+
+        let mut secret_bytes = self.secret.to_bytes_be();
+        secret_bytes.insert(0, prefix);
+        
+        if compressed {
+            let sufix = hex::decode("01").unwrap()[0];
+            secret_bytes.push(sufix);
+        }
+
+        encode_base58_checksum(&secret_bytes)
+    }
 }
 
 pub fn hash160(bytes: &[u8]) -> Vec<u8> {
@@ -130,5 +148,32 @@ mod tests {
         let hash_160 = hash160(b"my secret");
         let hash160_my_secret = [144, 228, 193, 75, 235, 6, 103, 99, 58, 142, 47, 92, 110, 148, 240, 140, 171, 139, 187, 93];
         assert_eq!(hash_160, hash160_my_secret);
+    }
+
+    #[test]
+    fn test_wif() {
+        let mut pk = PrivateKey::new(BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(199));
+        let mut expected = "L5oLkpV3aqBJ4BgssVAsax1iRa77G5CVYnv9adQ6Z87te7TyUdSC";
+        assert_eq!(pk.wif(true, false), expected);
+
+        pk = PrivateKey::new(BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(201));
+        expected = "93XfLeifX7Jx7n7ELGMAf1SUR6f9kgQs8Xke8WStMwUtrDucMzn";
+        assert_eq!(pk.wif(false, true), expected);
+
+        pk = PrivateKey::new(BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(201));
+        expected = "93XfLeifX7Jx7n7ELGMAf1SUR6f9kgQs8Xke8WStMwUtrDucMzn";
+        assert_eq!(pk.wif(false, true), expected);
+
+        pk = PrivateKey::new(BigUint::from_bytes_be(
+            &hex::decode("0dba685b4511dbd3d368e5c4358a1277de9486447af7b3604a69b8d9d8b7889d").unwrap())
+        );
+        expected = "5HvLFPDVgFZRK9cd4C5jcWki5Skz6fmKqi1GQJf5ZoMofid2Dty";
+        assert_eq!(pk.wif(false, false), expected);
+
+        pk = PrivateKey::new(
+            BigUint::from_bytes_be(&hex::decode("1cca23de92fd1862fb5b76e5f4f50eb082165e5191e116c18ed1a6b24be6a53f").unwrap())
+        );
+        expected = "cNYfWuhDpbNM1JWc3c6JTrtrFVxU4AGhUKgw5f93NP2QaBqmxKkg";
+        assert_eq!(pk.wif(true, true), expected);
     }
 }

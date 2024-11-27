@@ -106,4 +106,17 @@ fn main() {
     // println!("{:#?}", hex::encode(point.compressed_sec()));
     println!("{}", point.uncompressed_sec()[0]);
     println!("{}", point.compressed_sec()[0]);
+
+    let rbin = r.to_bytes_be();
+    println!("{}", rbin[0]);
+    println!("{:?}", hex::decode("80").unwrap()[0]);
+    println!("{:?}", hex::decode("00").unwrap()[0]);
+
+
+    let r = BigUint::from_bytes_be(&hex::decode("37206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c6").unwrap());
+    let s = BigUint::from_bytes_be(&hex::decode("8ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec").unwrap());
+    let sig = cripto::Signature::new(r, s);
+    println!("{:#?}", hex::encode(sig.der()));
+    // 3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec
+    
 }

@@ -1,4 +1,5 @@
 use num_bigint::{BigUint, RandBigInt};
+use sha2::{Digest, Sha256};
 
 
 use crate::elliptic_curve::{S256Point, N_S256};
@@ -66,6 +67,22 @@ impl PrivateKey {
     }
 }
 
+pub fn hash160(bytes: &[u8]) -> Vec<u8> {
+    let mut sha_hasher_1 = Sha256::new();
+    sha_hasher_1.update(bytes);
+    let res_1 = sha_hasher_1.finalize();
+
+    let mut sha_hasher_2 = Sha256::new();
+    sha_hasher_2.update(res_1);
+    let res_2 = sha_hasher_2.finalize();
+
+    let mut ripemd_hasher = ripemd::Ripemd160::new();
+    ripemd_hasher.update(res_2);
+    let res_3 = ripemd_hasher.finalize();
+    
+    res_3.to_vec()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -91,5 +108,12 @@ mod tests {
             "3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec",
             hex::encode(sig.der())
         );
+    }
+
+    #[test]
+    fn test_hash160() {
+        let hash_160 = hash160(b"my secret");
+        let hash160_my_secret = [183, 132, 93, 197, 210, 216, 71, 204, 195, 149, 24, 146, 214, 215, 22, 109, 28, 173, 123, 75];
+        assert_eq!(hash_160, hash160_my_secret);
     }
 }

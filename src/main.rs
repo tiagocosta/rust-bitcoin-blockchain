@@ -118,5 +118,18 @@ fn main() {
     let sig = cripto::Signature::new(r, s);
     println!("{:#?}", hex::encode(sig.der()));
     // 3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec
-    
+    // 7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d
+    let bin = &hex::decode("7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d").unwrap();
+    let b58 = bs58::encode(bin);
+    println!("{:?}", b58.into_string());
+
+    let sha = Sha256::digest(Sha256::digest(b"my secret"));
+    println!("{:?}", sha);
+    let mut rip = ripemd::Ripemd160::new();
+    rip.update(sha);
+    let res = rip.finalize();
+    println!("{:?}", res);
+
+    let hash_160 = cripto::hash160(b"my secret");
+    println!("{:?}", hash_160);
 }

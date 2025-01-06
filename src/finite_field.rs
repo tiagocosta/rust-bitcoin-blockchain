@@ -1,244 +1,103 @@
 use std::ops::{Add, Div, Mul, Sub};
+use std::rc::Rc;
 use num_bigint::{BigInt, BigUint, Sign, ToBigInt};
 use lazy_static::lazy_static;
 
 lazy_static! {
     pub static ref P: BigUint = BigUint::from(2u32).pow(256) - BigUint::from(2u32).pow(32) - BigUint::from(977u32);
+    pub static ref ONE: BigUint = BigUint::from(1u32);
 }
 
+pub type Num = BigUint;
+pub type Prime = Rc<BigUint>;
 
 #[derive(Debug, Clone)]
-pub struct S256Field<'a> (pub FieldElement<'a>);
-
-impl<'a> S256Field<'a> {
-    pub fn new(num: BigUint) -> Self {
-        S256Field(FieldElement::new(num, &P))
-    }
-
-    fn from_field_element(field_element: FieldElement<'a>) -> Self {
-        S256Field::new(field_element.num)
-    }
-
-    pub fn from_S256_field(other: S256Field<'a>) -> Self {
-        S256Field::new(other.num().clone())
-    }
-
-    pub fn num(&self) -> &BigUint {
-        &self.0.num
-    }
-
-    pub fn sqrt(&self) -> Self {
-        let exp = (&P.clone() + BigUint::from(1u32)) / BigUint::from(4u32);
-        S256Field(self.0.pow(&exp.to_bigint().unwrap()))
-    }
-
-    pub fn pow(&self, exp: &BigInt) -> Self {
-        S256Field(self.0.pow(&exp.to_bigint().unwrap()))
-    }
+pub struct FieldElement {
+    num: Num,
+    prime: Prime,
 }
 
-impl<'a> PartialEq for S256Field<'a> {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
-    }
-}
-
-impl<'a> Add for S256Field<'a> {
-    type Output = Self;
-
-    fn add(self, other: Self) -> Self {
-        S256Field::from_field_element(self.0 + other.0)
-    }
-}
-
-impl<'a, 'b> Add<&'b S256Field<'_>> for &'a S256Field<'_> {
-    type Output = S256Field<'a>;
-
-    fn add(self, other: &'b S256Field) -> S256Field<'a> {
-        S256Field::from_field_element(&self.0 + &other.0)
-    }
-}
-
-impl<'a>  Sub for S256Field<'a>  {
-    type Output = Self;
-
-    fn sub(self, other: Self) -> Self {
-        S256Field::from_field_element(self.0 - other.0)
-    }
-}
-
-impl<'a, 'b> Sub<&'b S256Field<'_>> for &'a S256Field<'_> {
-    type Output = S256Field<'a>;
-
-    fn sub(self, other: &'b S256Field) -> S256Field<'a> {
-        S256Field::from_field_element(&self.0 - &other.0)
-    }
-}
-
-impl<'a> Mul for S256Field<'a> {
-    type Output = Self;
-
-    fn mul(self, rhs: Self) -> Self {
-        S256Field::from_field_element(self.0 * rhs.0)
-    }
-}
-
-impl<'a, 'b> Mul<&'b S256Field<'_>> for &'a S256Field<'_> {
-    type Output = S256Field<'a>;
-
-    fn mul(self, other: &'b S256Field) -> S256Field<'a> {
-        S256Field::from_field_element(&self.0 * &other.0)
-    }
-}
-
-impl<'a> Div for S256Field<'a> {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        S256Field::from_field_element(self.0 / rhs.0)
-    }
-}
-
-impl<'a, 'b> Div<&'b S256Field<'_>> for &'a S256Field<'_> {
-    type Output = S256Field<'a>;
-
-    fn div(self, other: &'b S256Field) -> S256Field<'a> {
-        S256Field::from_field_element(&self.0 / &other.0)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct FieldElement<'a> {
-    pub num: BigUint,
-    pub prime: &'a BigUint,
-}
-
-impl<'a> FieldElement<'a> {
-    pub fn new(num: BigUint, prime: &'a BigUint) -> Self {
+impl FieldElement {
+    pub fn new(num: Num, prime: Prime) -> Self {
         if num >= *prime {
-            panic!("num {} not in field range 0 to {}", num, prime - BigUint::from(1u32));
+            panic!("num {} not in field of order {}", num, prime);
         }
         FieldElement { num, prime }
     }
 
     pub fn pow(&self, exp: &BigInt) -> Self {
         if exp.sign() == Sign::Minus {
-            let inv = &(self.num.modinv(self.prime).unwrap()).to_bigint().unwrap();
+            let inv = &(self.num.modinv(&self.prime).unwrap()).to_bigint().unwrap();
             let num = inv.modpow(&exp.magnitude().to_bigint().unwrap(), &self.prime.to_bigint().unwrap());
-            return FieldElement::new(num.to_biguint().unwrap(), self.prime);
+            return FieldElement::new(num.to_biguint().unwrap(), Rc::clone(&self.prime));
         }
-        let num = self.num.modpow(&exp.to_biguint().unwrap(), self.prime);
-        FieldElement::new(num, self.prime)
+        let num = self.num.modpow(&exp.to_biguint().unwrap(), &self.prime);
+        FieldElement::new(num, Rc::clone(&self.prime))
+    }
+
+    pub fn num(&self) -> &Num {
+        &self.num
+    }
+
+    pub fn prime(&self) -> Prime {
+        Rc::clone(&self.prime)
     }
 }
 
-impl<'a> PartialEq for FieldElement<'a> {
+impl PartialEq for FieldElement {
     fn eq(&self, other: &Self) -> bool {
         self.num == other.num && self.prime == other.prime
     }
 }
 
-impl<'a> Add for FieldElement<'a> {
-    type Output = Self;
+impl<'a> Add<&'a FieldElement> for &FieldElement {
+    type Output = Result<FieldElement, &'static str>;
 
-    fn add(self, other: Self) -> Self {
-        if same_field(&self, &other) {
-            panic!("can't add numbers in different fields");
-        }
-        let num = (&self.num + &other.num) % self.prime;
-        Self::new(num, self.prime)
-    }
-}
-
-impl<'a, 'b> Add<&'b FieldElement<'_>> for &'a FieldElement<'_> {
-    type Output = FieldElement<'a>;
-
-    fn add(self, other: &'b FieldElement) -> FieldElement<'a> {
+    fn add(self, other: &'a FieldElement) -> Self::Output {
         if same_field(self, other) {
-            panic!("can't add numbers in different fields");
+            return Err("can't add numbers in different fields");
         }
-        let num = (&self.num + &other.num) % self.prime;
-        FieldElement::new(num, self.prime)
+        let num = (&self.num + &other.num).modpow(&BigUint::from(1u32), &self.prime);
+        Ok(FieldElement::new(num, Rc::clone(&self.prime)))
     }
 }
 
-impl<'a>  Sub for FieldElement<'a>  {
-    type Output = Self;
+impl<'a> Sub<&'a FieldElement> for &FieldElement {
+    type Output = Result<FieldElement, &'static str>;
 
-    fn sub(self, other: Self) -> Self {
-        if same_field(&self, &other) {
-            panic!("can't subtract numbers in different fields");
+    fn sub(self, other: &'a FieldElement) -> Self::Output {
+        if same_field(self, other) {
+            return Err("can't subtract numbers in different fields");
         }
         // ((a % b) + b) % b // workaround for modulus operation of a negative number in rust
         let num = &self.num.to_bigint().unwrap() - &other.num.to_bigint().unwrap();
         let prime = &self.prime.to_bigint().unwrap();
         let res = ((num % prime) + prime) % prime;
-        Self::new(res.to_biguint().unwrap(), self.prime)
+        Ok(FieldElement::new(res.to_biguint().unwrap(), Rc::clone(&self.prime)))
     }
 }
 
-impl<'a, 'b> Sub<&'b FieldElement<'_>> for &'a FieldElement<'_> {
-    type Output = FieldElement<'a>;
+impl<'a> Mul<&'a FieldElement> for &FieldElement {
+    type Output = Result<FieldElement, &'static str>;
 
-    fn sub(self, other: &'b FieldElement) -> FieldElement<'a> {
+    fn mul(self, other: &'a FieldElement) -> Self::Output {
         if same_field(self, other) {
-            panic!("can't subtract numbers in different fields");
+            return Err("can't multiply numbers in different fields");
         }
-        // ((a % b) + b) % b // workaround for modulus operation of a negative number in rust
-        let num = &self.num.to_bigint().unwrap() - &other.num.to_bigint().unwrap();
-        let prime = &self.prime.to_bigint().unwrap();
-        let res = ((num % prime) + prime) % prime;
-        FieldElement::new(res.to_biguint().unwrap(), self.prime)
+        let num = (&self.num * &other.num).modpow(&BigUint::from(1u32), &self.prime);
+        Ok(FieldElement::new(num, Rc::clone(&self.prime)))
     }
 }
 
-impl<'a> Mul for FieldElement<'a> {
-    type Output = Self;
+impl<'a> Div<&'a FieldElement> for &FieldElement {
+    type Output = Result<FieldElement, &'static str>;
 
-    fn mul(self, rhs: Self) -> Self {
-        if same_field(&self, &rhs) {
-            panic!("can't multiply numbers in different fields");
-        }
-        let num = (&self.num * &rhs.num) % self.prime;
-        Self::new(num, self.prime)
-    }
-}
-
-impl<'a, 'b> Mul<&'b FieldElement<'_>> for &'a FieldElement<'_> {
-    type Output = FieldElement<'a>;
-
-    fn mul(self, other: &'b FieldElement) -> FieldElement<'a> {
-        if same_field(self, other) {
-            panic!("can't multiply numbers in different fields");
-        }
-        let num = (&self.num * &other.num) % self.prime;
-        FieldElement::new(num, self.prime)
-    }
-}
-
-impl<'a> Div for FieldElement<'a> {
-    type Output = Self;
-
-    fn div(self, rhs: Self) -> Self::Output {
-        if rhs.num == BigUint::from(0u32) {
-            panic!("can't divide by zero!");
-        }
-        if same_field(&self, &rhs) {
-            panic!("can't divide numbers in different fields");
-        }
-        self * rhs.pow(&BigInt::from(-1))
-    }
-}
-
-impl<'a, 'b> Div<&'b FieldElement<'_>> for &'a FieldElement<'_> {
-    type Output = FieldElement<'a>;
-
-    fn div(self, other: &'b FieldElement) -> FieldElement<'a> {
+    fn div(self, other: &'a FieldElement) -> Self::Output {
         if other.num == BigUint::from(0u32) {
-            panic!("can't divide by zero!");
+            return Err("can't divide by zero!");
         }
         if same_field(self, other) {
-            panic!("can't divide numbers in different fields");
+            return Err("can't divide numbers in different fields");
         }
         self * &other.pow(&BigInt::from(-1))
     }
@@ -256,26 +115,26 @@ mod tests {
     #[should_panic]
     fn test_new_invalid_finite_element() {
         let num = BigUint::from(31u32);
-        let prime = BigUint::from(29u32);
-        FieldElement::new(num, &prime);
+        let prime = Rc::new(BigUint::from(29u32));
+        FieldElement::new(num, prime);
     }
 
     #[test]
     fn test_new_valid_finite_element() {
         let num = BigUint::from(29u32);
-        let prime = BigUint::from(31u32);
-        let field_element = FieldElement::new(num, &prime);
+        let prime = Rc::new(BigUint::from(31u32));
+        let field_element = FieldElement::new(num, prime);
         assert_eq!(field_element.num, BigUint::from(29u32));
-        assert_eq!(field_element.prime, &BigUint::from(31u32));
+        assert_eq!(field_element.prime, Rc::new(BigUint::from(31u32)));
     }
 
     #[test]
     fn test_eq() {
 
-        let prime = BigUint::from(31u32);
-        let a = FieldElement::new(BigUint::from(2u32), &prime);
-        let b = FieldElement::new(BigUint::from(2u32), &prime);
-        let c = FieldElement::new(BigUint::from(15u32), &prime);
+        let prime = Rc::new(BigUint::from(31u32));
+        let a = FieldElement::new(BigUint::from(2u32), Rc::clone(&prime));
+        let b = FieldElement::new(BigUint::from(2u32), Rc::clone(&prime));
+        let c = FieldElement::new(BigUint::from(15u32), Rc::clone(&prime));
         assert_eq!(a, b);
         assert_ne!(a, c);
         assert_ne!(b, c);
@@ -283,120 +142,106 @@ mod tests {
     
     #[test]
     fn test_add() {
-        let prime = BigUint::from(31u32);
-        let a = FieldElement::new(BigUint::from(2u32), &prime);
-        let b = FieldElement::new(BigUint::from(15u32), &prime);
-        let res_add_a_b = FieldElement::new(BigUint::from(17u32), &prime);
-        assert_eq!(&a + &b, res_add_a_b);
-        assert_eq!(a + b, res_add_a_b);
-        let c = FieldElement::new(BigUint::from(17u32), &prime);
-        let d = FieldElement::new(BigUint::from(21u32), &prime);
-        let res_add_c_d = FieldElement::new(BigUint::from(7u32), &prime);
-        assert_eq!(&c + &d, res_add_c_d);
-        assert_eq!(c + d, res_add_c_d);
+        let prime = Rc::new(BigUint::from(31u32));
+        let a = FieldElement::new(BigUint::from(2u32), Rc::clone(&prime));
+        let b = FieldElement::new(BigUint::from(15u32), Rc::clone(&prime));
+        let res_add_a_b = FieldElement::new(BigUint::from(17u32), Rc::clone(&prime));
+        assert_eq!((&a + &b).unwrap(), res_add_a_b);
+        let c = FieldElement::new(BigUint::from(17u32), Rc::clone(&prime));
+        let d = FieldElement::new(BigUint::from(21u32), Rc::clone(&prime));
+        let res_add_c_d = FieldElement::new(BigUint::from(7u32), Rc::clone(&prime));
+        assert_eq!((&c + &d).unwrap(), res_add_c_d);
     }
 
     #[test]
-    #[should_panic]
     fn test_add_elements_in_different_fields() {
-        let prime_1 = BigUint::from(31u32);
-        let prime_2 = BigUint::from(29u32);
-        let a = FieldElement::new(BigUint::from(2u32), &prime_1);
-        let b = FieldElement::new(BigUint::from(15u32), &prime_2);
-        let _ = a + b;
+        let prime_1 = Rc::new(BigUint::from(31u32));
+        let prime_2 = Rc::new(BigUint::from(29u32));
+        let a = FieldElement::new(BigUint::from(2u32), prime_1);
+        let b = FieldElement::new(BigUint::from(15u32), prime_2);
+        let res = &a + &b;
+        assert!(res.is_err());
     }
     
     #[test]
     fn test_sub() {
-        let prime = BigUint::from(31u32);
-        let a = FieldElement::new(BigUint::from(29u32), &prime);
-        let b = FieldElement::new(BigUint::from(4u32), &prime);
-        let res_sub_a_b = FieldElement::new(BigUint::from(25u32), &prime);
-        assert_eq!(&a - &b, res_sub_a_b);
-        assert_eq!(a - b, res_sub_a_b);
-        let c = FieldElement::new(BigUint::from(15u32), &prime);
-        let d = FieldElement::new(BigUint::from(30u32), &prime);
-        let res_sub_c_d = FieldElement::new(BigUint::from(16u32), &prime);
-        assert_eq!(&c - &d, res_sub_c_d);
-        assert_eq!(c - d, res_sub_c_d);
+        let prime = Rc::new(BigUint::from(31u32));
+        let a = FieldElement::new(BigUint::from(29u32), Rc::clone(&prime));
+        let b = FieldElement::new(BigUint::from(4u32), Rc::clone(&prime));
+        let res_sub_a_b = FieldElement::new(BigUint::from(25u32), Rc::clone(&prime));
+        assert_eq!((&a - &b).unwrap(), res_sub_a_b);
+        let c = FieldElement::new(BigUint::from(15u32), Rc::clone(&prime));
+        let d = FieldElement::new(BigUint::from(30u32), Rc::clone(&prime));
+        let res_sub_c_d = FieldElement::new(BigUint::from(16u32), Rc::clone(&prime));
+        assert_eq!((&c - &d).unwrap(), res_sub_c_d);
     }
 
     #[test]
-    #[should_panic]
     fn test_sub_elements_in_different_fields() {
-        let prime_1 = BigUint::from(31u32);
-        let prime_2 = BigUint::from(29u32);
-        let a = FieldElement::new(BigUint::from(2u32), &prime_1);
-        let b = FieldElement::new(BigUint::from(15u32), &prime_2);
-        let _ = a - b;
+        let prime_1 = Rc::new(BigUint::from(31u32));
+        let prime_2 = Rc::new(BigUint::from(29u32));
+        let a = FieldElement::new(BigUint::from(2u32), prime_1);
+        let b = FieldElement::new(BigUint::from(15u32), prime_2);
+        let res = &a - &b;
+        assert!(res.is_err());
     }
 
     #[test]
     fn test_mul() {
-        let prime = BigUint::from(31u32);
-        let a = FieldElement::new(BigUint::from(24u32), &prime);
-        let b = FieldElement::new(BigUint::from(19u32), &prime);
-        let res_mul_a_b = FieldElement::new(BigUint::from(22u32), &prime);
-        assert_eq!(&a * &b, res_mul_a_b);
-        assert_eq!(a * b, res_mul_a_b);
+        let prime = Rc::new(BigUint::from(31u32));
+        let a = FieldElement::new(BigUint::from(24u32), Rc::clone(&prime));
+        let b = FieldElement::new(BigUint::from(19u32), Rc::clone(&prime));
+        let res_mul_a_b = FieldElement::new(BigUint::from(22u32), Rc::clone(&prime));
+        assert_eq!((&a * &b).unwrap(), res_mul_a_b);
     }
 
     #[test]
-    #[should_panic]
     fn test_mul_elements_in_different_fields() {
-        let prime_1 = BigUint::from(31u32);
-        let prime_2 = BigUint::from(29u32);
-        let a = FieldElement::new(BigUint::from(2u32), &prime_1);
-        let b = FieldElement::new(BigUint::from(15u32), &prime_2);
-        let _ = a * b;
+        let prime_1 = Rc::new(BigUint::from(31u32));
+        let prime_2 = Rc::new(BigUint::from(29u32));
+        let a = FieldElement::new(BigUint::from(2u32), prime_1);
+        let b = FieldElement::new(BigUint::from(15u32), prime_2);
+        let res = &a * &b;
+        assert!(res.is_err());
     }
 
     #[test]
     fn test_pow() {
-        let prime = BigUint::from(31u32);
-        let a = FieldElement::new(BigUint::from(17u32), &prime);
-        let a_pow_3 = FieldElement::new(BigUint::from(15u32), &prime);
+        let prime = Rc::new(BigUint::from(31u32));
+        let a = FieldElement::new(BigUint::from(17u32), Rc::clone(&prime));
+        let a_pow_3 = FieldElement::new(BigUint::from(15u32), Rc::clone(&prime));
         assert_eq!(&a.pow(&BigInt::from(3)), &a_pow_3);
         assert_eq!(a.pow(&BigInt::from(3)), a_pow_3);
-        let b = FieldElement::new(BigUint::from(5u32), &prime);
-        let c = FieldElement::new(BigUint::from(18u32), &prime);
-        let res_b_pow_5_mul_c = FieldElement::new(BigUint::from(16u32), &prime);
-        assert_eq!(&b.pow(&BigInt::from(5)) * &c, res_b_pow_5_mul_c);
-        assert_eq!(b.pow(&BigInt::from(5)) * c, res_b_pow_5_mul_c);
-        let d = FieldElement::new(BigUint::from(17u32), &prime);
-        let res_d_pow_minus3 =FieldElement::new(BigUint::from(29u32), &prime);
+        let b = FieldElement::new(BigUint::from(5u32), Rc::clone(&prime));
+        let c = FieldElement::new(BigUint::from(18u32), Rc::clone(&prime));
+        let res_b_pow_5_mul_c = FieldElement::new(BigUint::from(16u32), Rc::clone(&prime));
+        assert_eq!((&b.pow(&BigInt::from(5)) * &c).unwrap(), res_b_pow_5_mul_c);
+        let d = FieldElement::new(BigUint::from(17u32), Rc::clone(&prime));
+        let res_d_pow_minus3 =FieldElement::new(BigUint::from(29u32), Rc::clone(&prime));
         assert_eq!(&d.pow(&BigInt::from(-3)), &res_d_pow_minus3);
         assert_eq!(d.pow(&BigInt::from(-3)), res_d_pow_minus3);
-        let e = FieldElement::new(BigUint::from(4u32), &prime);
-        let f = FieldElement::new(BigUint::from(11u32), &prime);
-        let res_e_pow_minus4_mul_f = FieldElement::new(BigUint::from(13u32), &prime);
-        assert_eq!(&e.pow(&BigInt::from(-4)) * &f, res_e_pow_minus4_mul_f);
-        assert_eq!(e.pow(&BigInt::from(-4)) * f, res_e_pow_minus4_mul_f);
+        let e = FieldElement::new(BigUint::from(4u32), Rc::clone(&prime));
+        let f = FieldElement::new(BigUint::from(11u32), Rc::clone(&prime));
+        let res_e_pow_minus4_mul_f = FieldElement::new(BigUint::from(13u32), Rc::clone(&prime));
+        assert_eq!((&e.pow(&BigInt::from(-4)) * &f).unwrap(), res_e_pow_minus4_mul_f);
     }
 
     #[test]
     fn test_div() {
-        let prime = BigUint::from(31u32);
-        let a = FieldElement::new(BigUint::from(3u32), &prime);
-        let b = FieldElement::new(BigUint::from(24u32), &prime);
-        let res_div_a_b = FieldElement::new(BigUint::from(4u32), &prime);
-        assert_eq!(&a/&b, res_div_a_b);
-        assert_eq!(a/b, res_div_a_b);
+        let prime = Rc::new(BigUint::from(31u32));
+        let a = FieldElement::new(BigUint::from(3u32), Rc::clone(&prime));
+        let b = FieldElement::new(BigUint::from(24u32), Rc::clone(&prime));
+        let res_div_a_b = FieldElement::new(BigUint::from(4u32), Rc::clone(&prime));
+        assert_eq!((&a/&b).unwrap(), res_div_a_b);
     }
 
     #[test]
-    #[should_panic]
     fn test_div_elements_in_different_fields() {
-        let prime_1 = BigUint::from(31u32);
-        let prime_2 = BigUint::from(29u32);
-        let a = FieldElement::new(BigUint::from(2u32), &prime_1);
-        let b = FieldElement::new(BigUint::from(15u32), &prime_2);
-        let _ = a / b;
-    }
-
-    #[test]
-    fn test_new_s256field() {
-        let new_s256field = S256Field::new(BigUint::from(15u32));
-        assert_eq!(*new_s256field.0.prime, *P)
+        let prime_1 = Rc::new(BigUint::from(31u32));
+        let prime_2 = Rc::new(BigUint::from(29u32));
+        let a = FieldElement::new(BigUint::from(2u32), prime_1);
+        let b = FieldElement::new(BigUint::from(15u32), prime_2);
+        let res = &a / &b;
+        assert!(res.is_err());
     }
 }

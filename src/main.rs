@@ -1,8 +1,9 @@
 mod finite_field;
 mod elliptic_curve;
+mod secp256k1;
 mod cripto;
 
-use elliptic_curve::{S256Point, N_S256};
+// use elliptic_curve::{S256Point, N_S256};
 use num_bigint::BigUint;
 use sha2::{Sha256, Digest};
 
@@ -74,62 +75,61 @@ fn main() {
     // let hash = hasher.finalize();
     // println!("Binary hash: {:?}", hash[..]);
 
-    let e = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my secret")));
-    let z = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my message")));
-    let k = BigUint::from(1234567890u32);
-    // let k = BigUint::from(1u32);
+    // let e = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my secret")));
+    // let z = BigUint::from_bytes_be(&Sha256::digest(Sha256::digest(b"my message")));
+    // let k = BigUint::from(1234567890u32);
 
-    let g = S256Point::generator();
+    // let g = S256Point::generator();
 
-    let p = &g * &k;
+    // let p = &g * &k;
 
-    let r = p.xy().unwrap().0;
+    // let r = p.xy().unwrap().0;
 
-    let k_inv = k.modinv(&N_S256).unwrap();
-    // println!("{:#?}", hex::decode(hash).unwrap());
-    // println!("{}", k_inv);
-    let one = BigUint::from(1u32);
-    let s = ((&z + r*&e) * k_inv).modpow(&one, &N_S256);
+    // let k_inv = k.modinv(&N_S256).unwrap();
+    // // println!("{:#?}", hex::decode(hash).unwrap());
+    // // println!("{}", k_inv);
+    // let one = BigUint::from(1u32);
+    // let s = ((&z + r*&e) * k_inv).modpow(&one, &N_S256);
 
-    let point = &g * &e;
+    // let point = &g * &e;
 
-    // println!("{:#?}", point);
-    println!("{}", hex::encode(point.xy().unwrap().0.to_bytes_be()));
-    println!("{}", hex::encode(point.xy().unwrap().1.to_bytes_be()));
-    println!("{}", hex::encode(z.to_bytes_be()));
-    println!("{}", hex::encode(r.to_bytes_be()));
-    // println!("{}", hex::encode(s.to_bytes_be()));
+    // // println!("{:#?}", point);
+    // println!("{}", hex::encode(point.xy().unwrap().0.to_bytes_be()));
+    // println!("{}", hex::encode(point.xy().unwrap().1.to_bytes_be()));
+    // println!("{}", hex::encode(z.to_bytes_be()));
+    // println!("{}", hex::encode(r.to_bytes_be()));
+    // // println!("{}", hex::encode(s.to_bytes_be()));
 
-    let coef = BigUint::from(999u32).pow(3);
-    let point = &g * &coef;
-    // println!("{:#?}", hex::encode(point.uncompressed_sec()));
-    // println!("{:#?}", hex::encode(point.compressed_sec()));
-    println!("{}", point.uncompressed_sec()[0]);
-    println!("{}", point.compressed_sec()[0]);
+    // let coef = BigUint::from(999u32).pow(3);
+    // let point = &g * &coef;
+    // // println!("{:#?}", hex::encode(point.uncompressed_sec()));
+    // // println!("{:#?}", hex::encode(point.compressed_sec()));
+    // println!("{}", point.uncompressed_sec()[0]);
+    // println!("{}", point.compressed_sec()[0]);
 
-    let rbin = r.to_bytes_be();
-    println!("{}", rbin[0]);
-    println!("{:?}", hex::decode("80").unwrap()[0]);
-    println!("{:?}", hex::decode("00").unwrap()[0]);
+    // let rbin = r.to_bytes_be();
+    // println!("{}", rbin[0]);
+    // println!("{:?}", hex::decode("80").unwrap()[0]);
+    // println!("{:?}", hex::decode("00").unwrap()[0]);
 
 
-    let r = BigUint::from_bytes_be(&hex::decode("37206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c6").unwrap());
-    let s = BigUint::from_bytes_be(&hex::decode("8ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec").unwrap());
-    let sig = cripto::Signature::new(r, s);
-    println!("{:#?}", hex::encode(sig.der()));
-    // 3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec
-    // 7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d
-    let bin = &hex::decode("7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d").unwrap();
-    let b58 = bs58::encode(bin);
-    println!("{:?}", b58.into_string());
+    // let r = BigUint::from_bytes_be(&hex::decode("37206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c6").unwrap());
+    // let s = BigUint::from_bytes_be(&hex::decode("8ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec").unwrap());
+    // let sig = cripto::Signature::new(r, s);
+    // println!("{:#?}", hex::encode(sig.der()));
+    // // 3045022037206a0610995c58074999cb9767b87af4c4978db68c06e8e6e81d282047a7c60221008ca63759c1157ebeaec0d03cecca119fc9a75bf8e6d0fa65c841c8e2738cdaec
+    // // 7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d
+    // let bin = &hex::decode("7c076ff316692a3d7eb3c3bb0f8b1488cf72e1afcd929e29307032997a838a3d").unwrap();
+    // let b58 = bs58::encode(bin);
+    // println!("{:?}", b58.into_string());
 
-    let sha = Sha256::digest(b"my secret");
-    println!("{:?}", sha);
-    let mut rip = ripemd::Ripemd160::new();
-    rip.update(sha);
-    let res = rip.finalize();
-    println!("{:?}", res);
+    // let sha = Sha256::digest(b"my secret");
+    // println!("{:?}", sha);
+    // let mut rip = ripemd::Ripemd160::new();
+    // rip.update(sha);
+    // let res = rip.finalize();
+    // println!("{:?}", res);
 
-    let hash_160 = cripto::hash160(b"my secret");
-    println!("{:?}", hash_160);
+    // let hash_160 = cripto::hash160(b"my secret");
+    // println!("{:?}", hash_160);
 }
